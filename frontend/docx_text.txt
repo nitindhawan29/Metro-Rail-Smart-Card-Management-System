@@ -1,0 +1,519 @@
+METRO RAIL SMART CARD
+MANAGEMENT SYSTEM
+Frontend Development Handoff Guide
+Stages 10 to 15
+Purpose: allow frontend work to proceed in parallel with backend Stages 5–9 without breaking the project or creating merge conflicts.
+Frozen starting point: repository after Stage 4
+Frontend stack: HTML + CSS + JavaScript
+Database/backend files are read-only for the frontend developer.
+1. Purpose and Scope of This Handoff
+This document is for the team member implementing Stages 10–15 while backend Stages 5–9 are being developed separately. The main objective is to finish a complete, integration-ready frontend without changing the database or backend implementation.
+Start from the shared repository exactly at the Stage 4 baseline.
+Work only inside the frontend/ directory unless this guide explicitly says otherwise.
+Do not modify database schema, backend routes, controllers, .env files, Node packages, or SQL files.
+Build the frontend against the API contract in this document, using a mock adapter until Stage 16.
+At Stage 16, both developers will integrate the finished frontend with the finished backend together.
+2. Non-Negotiable Rules to Prevent Project Breakage
+Rule
+Required action
+Backend is read-only
+Do not edit backend/, database/, backend/package.json, backend/.env, or SQL files.
+No schema assumptions outside this guide
+Use the exact field names listed in the Frozen Data Contract section.
+No direct database access from frontend
+Frontend must communicate only through API functions. Never connect HTML/JS directly to MySQL.
+No React/Vue/frontend framework
+Use the frozen stack: plain HTML, CSS, and JavaScript.
+No authentication/login work
+Authentication is outside the required project scope.
+No new API endpoints
+Dashboard and search must be computed from the existing CRUD list endpoints.
+Do not merge early
+Keep frontend work on its own branch until Stage 16 integration.
+Centralize API calls
+Never scatter fetch() calls across page files. All real API communication must go through one service file.
+Mock mode must be isolated
+Mock data is only for parallel frontend development and must be switchable off from one config setting.
+3. Git Workflow for Parallel Development
+The frontend developer should branch from the Stage 4 commit pushed by the backend developer. This keeps frontend changes separate and makes Stage 16 merging safe because the two developers are primarily changing different folders.
+# After cloning/pulling the Stage 4 repository
+git checkout <stage-4-shared-branch>
+git pull
+git checkout -b frontend-stages-10-15
+git push -u origin frontend-stages-10-15
+Before every commit, verify that only frontend files changed:
+git status
+git diff --name-only
+Expected changed paths should begin with:
+frontend/
+If backend/ or database/ appears unexpectedly, revert those accidental changes before committing.
+4. Frozen Data Contract
+The frontend must use these field names exactly. Do not rename them in HTML data objects or API payloads.
+Entity
+Fields used by frontend
+Passenger
+passenger_id, passenger_name, country_code, mobile_number, email
+Smart Card
+card_id, passenger_id, card_number, balance
+Station
+station_id, station_name, line_name
+Transaction
+transaction_id, card_id, station_id, transaction_date, fare_amount
+4.1 Frozen Validation Rules
+Field
+Rule
+country_code
+Required. VARCHAR(4). Exact frozen check: ^[+][1-9][0-9]{0,2}$ (for example +91).
+mobile_number
+Required. Digits only; 4–14 digits. Combined country-code digits + mobile digits must not exceed 15.
+card_number
+Required. Exactly METRO followed by 4 digits, e.g. METRO0001. Regex: ^METRO[0-9]{4}$.
+balance
+Must be 0 or greater. Default should be 0.00 in the form.
+station_name
+Required.
+line_name
+Required.
+fare_amount
+Required and must be 0 or greater.
+transaction_date
+Display-only for new records. Database/backend is expected to generate it automatically.
+5. Frozen API Contract for Stage 16
+The backend developer will complete these CRUD routes in Stages 5–9. The frontend developer should code only against these paths. Until Stage 16, mock mode will emulate the same behavior.
+Method
+Endpoint
+Purpose
+GET
+/api/passengers
+Get all passengers
+GET
+/api/passengers/:id
+Get one passenger
+POST
+/api/passengers
+Create passenger
+PUT
+/api/passengers/:id
+Update passenger
+DELETE
+/api/passengers/:id
+Delete passenger
+GET
+/api/cards
+Get all smart cards
+GET
+/api/cards/:id
+Get one smart card
+POST
+/api/cards
+Create smart card
+PUT
+/api/cards/:id
+Update smart card
+DELETE
+/api/cards/:id
+Delete smart card
+GET
+/api/stations
+Get all stations
+GET
+/api/stations/:id
+Get one station
+POST
+/api/stations
+Create station
+PUT
+/api/stations/:id
+Update station
+DELETE
+/api/stations/:id
+Delete station
+GET
+/api/transactions
+Get all transactions
+GET
+/api/transactions/:id
+Get one transaction
+POST
+/api/transactions
+Create transaction
+PUT
+/api/transactions/:id
+Update transaction
+DELETE
+/api/transactions/:id
+Delete transaction
+5.1 Response Pattern the Frontend Should Expect
+For list/read operations, use the following shape as the main contract:
+{
+  "success": true,
+  "data": [ ... ]
+}
+For successful create/update/delete operations, rely only on success and message, then re-fetch the list. Do not make the UI depend on optional response details such as insertId.
+{
+  "success": true,
+  "message": "Operation completed successfully"
+}
+For an error:
+{
+  "success": false,
+  "message": "Readable error message"
+}
+6. Frontend Folder Structure to Create
+Create the following structure without moving existing backend/database files:
+frontend/
+├── index.html
+├── passengers.html
+├── cards.html
+├── stations.html
+├── transactions.html
+│
+├── css/
+│   └── style.css
+│
+└── js/
+    ├── config.js
+    ├── api.js
+    ├── mockApi.js
+    ├── common.js
+    ├── dashboard.js
+    ├── passengers.js
+    ├── cards.js
+    ├── stations.js
+    └── transactions.js
+config.js: API base URL and one mock/real mode switch.
+api.js: the only file allowed to use fetch() for real backend requests.
+mockApi.js: temporary frontend-only fake CRUD data used before Stage 16.
+common.js: reusable UI functions such as messages, loading states, escaping, and navigation helpers.
+Page-specific files: DOM handling only; they call api.js functions and never call fetch() directly.
+7. Parallel-Development Adapter (Very Important)
+Because the frontend developer starts from Stage 4, most CRUD APIs do not exist yet. Do not wait for the backend and do not modify it. Instead, use one controlled mock switch.
+// frontend/js/config.js
+const APP_CONFIG = {
+  API_BASE_URL: 'http://localhost:5000/api',
+  USE_MOCK_API: true
+};
+At Stage 16 integration, the team should change only:
+USE_MOCK_API: false
+The page files should not care whether data came from mock storage or MySQL. Both adapters must expose the same function names and return the same shape.
+7.1 Required Frontend Service Functions
+Area
+Functions
+Passengers
+getPassengers, getPassenger, createPassenger, updatePassenger, deletePassenger
+Cards
+getCards, getCard, createCard, updateCard, deleteCard
+Stations
+getStations, getStation, createStation, updateStation, deleteStation
+Transactions
+getTransactions, getTransaction, createTransaction, updateTransaction, deleteTransaction
+7.2 Safe Request Wrapper Pattern
+Real backend communication should be centralized. A recommended api.js pattern is:
+async function request(path, options = {}) {
+  const response = await fetch(`${APP_CONFIG.API_BASE_URL}${path}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...(options.headers || {})
+    },
+    ...options
+  });
+  const body = await response.json();
+  if (!response.ok || body.success === false) {
+    throw new Error(body.message || 'Request failed');
+  }
+  return body;
+}
+Page files should call wrapper functions such as createPassenger(data), not fetch() directly.
+8. Stage 10 — Frontend Foundation
+Goal: establish all pages, common navigation, shared styling, JS structure, and the API/mock abstraction. No page should be fully dependent on the backend yet.
+1.  Create the frontend folder structure exactly as defined above.
+2.  Create navigation links on every page: Dashboard, Passengers, Smart Cards, Stations, Transactions.
+3.  Create one shared style.css. Avoid page-specific inline CSS unless absolutely necessary.
+4.  Create config.js, api.js, mockApi.js, and common.js before writing page CRUD logic.
+5.  Set USE_MOCK_API to true.
+6.  Create empty table states, loading states, success/error message areas, and consistent Add/Edit forms.
+7.  Use semantic labels connected to inputs using for/id attributes.
+8.  Test all five pages using a simple local web server such as VS Code Live Server.
+Page
+Minimum Stage 10 content
+index.html
+Dashboard shell + four summary cards + recent-transactions section
+passengers.html
+Passenger form + passenger table shell
+cards.html
+Smart-card form + card table shell
+stations.html
+Station form + station table shell
+transactions.html
+Transaction form + transaction table shell
+Suggested commit:
+git commit -m "feat(frontend): establish Stage 10 frontend foundation"
+9. Stage 11 — Passenger Management Frontend
+Form label
+Input behavior
+Passenger Name
+Required text field
+Country Code
+Required text field; example +91
+Mobile Number
+Required digits-only field
+Email
+Optional email field
+1.  Load passengers through the service layer when the page opens.
+2.  Render passenger_id, passenger_name, full mobile (country_code + mobile_number), email, and Edit/Delete actions.
+3.  On Add, validate required fields, country-code format, digits-only mobile length (4–14), and combined international digits ≤ 15; then call createPassenger(), show a message, clear the form, and re-fetch the passenger list.
+4.  On Edit, populate the same form with the selected row and switch the submit action from Create to Update.
+5.  On Update, call updatePassenger(id, data), then re-fetch.
+6.  On Delete, ask for confirmation first, call deletePassenger(id), then re-fetch.
+7.  If delete fails because a card is linked, display the backend message instead of hiding it.
+8.  Add client-side search by passenger name, mobile number, or email. Search must filter already-loaded data; do not require a new backend route.
+Passenger payload:
+{
+  passenger_name: 'Rahul Sharma',
+  country_code: '+91',
+  mobile_number: '9876543210',
+  email: 'rahul@gmail.com'
+}
+Suggested commit:
+git commit -m "feat(frontend): complete passenger management UI"
+10. Stage 12 — Smart Card Management Frontend
+Form label
+Input behavior
+Passenger
+Required dropdown. Option value = passenger_id; visible text = passenger name.
+Card Number
+Required. Format METRO + 4 digits, e.g. METRO0001.
+Balance
+Number input, minimum 0, step 0.01, default 0.00.
+1.  Load passengers first so the Passenger dropdown contains real/mock passenger IDs.
+2.  Load smart cards through the service layer.
+3.  Display card_id, card_number, passenger name, and balance.
+4.  Do not depend on backend JOIN fields for passenger name. Build a passenger_id → passenger_name map from the passenger list so integration remains safe.
+5.  For Add/Update, send passenger_id, card_number, and balance only.
+6.  Validate ^METRO[0-9]{4}$ before submission and still allow backend/database validation to be authoritative.
+7.  Handle duplicate-card errors by showing the returned message.
+8.  Search/filter by card number or passenger name.
+Smart-card payload:
+{
+  passenger_id: 1,
+  card_number: 'METRO0001',
+  balance: 500.00
+}
+Suggested commit:
+git commit -m "feat(frontend): complete smart card management UI"
+11. Stage 13 — Station Management Frontend
+Form label
+Input behavior
+Station Name
+Required text field
+Line Name
+Required text field
+1.  Load stations through the service layer.
+2.  Render station_id, station_name, line_name, Edit, and Delete.
+3.  Use the same create/edit form pattern used on the Passenger page.
+4.  After every mutation, re-fetch stations instead of manually editing the table state.
+5.  Show referential-integrity errors if a station cannot be deleted because transactions reference it.
+6.  Add client-side filtering by station name and line name.
+Station payload:
+{
+  station_name: 'MP Nagar',
+  line_name: 'Orange Line'
+}
+Suggested commit:
+git commit -m "feat(frontend): complete station management UI"
+12. Stage 14 — Transaction Management Frontend
+Form label
+Input behavior
+Smart Card
+Required dropdown; value = card_id; visible text = card_number (optionally passenger name).
+Station
+Required dropdown; value = station_id; visible text = station_name + line_name.
+Fare Amount
+Required number input, min 0, step 0.01.
+Transaction Date
+Do not ask for it when creating a normal transaction. Show it in the table from returned data.
+1.  Load transactions, cards, stations, and passengers through the service layer.
+2.  Build local lookup maps so transaction rows can display passenger name, card number, station name, and line name even if the backend returns only IDs.
+3.  Do not require a special JOIN response format. Joined backend fields may be used if present, but the page must still work from the core IDs.
+4.  On Create, send only card_id, station_id, and fare_amount unless the final backend contract explicitly requires transaction_date.
+5.  On Edit, preserve the existing transaction_date unless the backend intentionally updates it.
+6.  On Delete, confirm before sending the request.
+7.  Allow client-side filtering by passenger/card/station and optionally date text.
+Transaction payload:
+{
+  card_id: 1,
+  station_id: 2,
+  fare_amount: 30.00
+}
+Display columns:
+Transaction ID | Passenger | Card Number | Station | Line | Date/Time | Fare | Actions
+Suggested commit:
+git commit -m "feat(frontend): complete transaction management UI"
+13. Stage 15 — Dashboard and Search/Filter
+Important: do not ask the backend developer to create dashboard endpoints. Derive dashboard data from the existing list APIs so Stage 16 remains simple.
+1.  Load passengers, cards, stations, and transactions.
+2.  Show Total Passengers = passengers.length.
+3.  Show Total Smart Cards = cards.length.
+4.  Show Total Stations = stations.length.
+5.  Show Total Transactions = transactions.length.
+6.  Optionally show Total Fare by summing fare_amount values.
+7.  Show recent transactions by sorting transaction_date descending and taking a small number of rows.
+8.  Use the same lookup maps as Stage 14 to display readable card/passenger/station names.
+9.  Keep all searches and filters client-side. Do not create or request new search APIs.
+Dashboard card
+How to calculate
+Total Passengers
+passengers.length
+Total Smart Cards
+cards.length
+Total Stations
+stations.length
+Total Transactions
+transactions.length
+Total Fare (optional)
+sum(Number(transaction.fare_amount || 0))
+Suggested commit:
+git commit -m "feat(frontend): complete dashboard and client-side filters"
+14. Mock Data Rules
+Mock mode exists only because backend Stages 5–9 are being developed in parallel. It must imitate the real contract closely so Stage 16 is a configuration/integration task rather than a frontend rewrite.
+Use the exact frozen field names; never invent alternative names such as mobile, cardNo, stationName, or fare.
+Use realistic IDs and relationships. Every card passenger_id must refer to an existing passenger; every transaction card_id/station_id must refer to existing records.
+Generate IDs in mockApi.js only; page scripts should never invent IDs.
+Mock create/update/delete functions should return objects shaped like the real API.
+If using localStorage for mock persistence, isolate every localStorage call inside mockApi.js. No page file should access localStorage directly.
+Clearly mark mock data as DEVELOPMENT ONLY in source comments. It must not be presented as MySQL persistence in the final demo.
+Suggested mock passengers
+Suggested linked records
+1 | Rahul Sharma | +91 | 9876543210
+Card 1 | passenger_id 1 | METRO0001
+2 | Priya Singh | +91 | 9876501234
+Card 2 | passenger_id 2 | METRO0002
+Stations: MP Nagar / AIIMS
+Transactions reference card_id 1/2 and valid station IDs
+15. Common UI Behavior Required on Every Management Page
+Behavior
+Rule
+Loading
+Disable submit while an operation is running and show a simple loading state.
+Success
+Show a short visible success message after create/update/delete.
+Error
+Show error.message returned by the API/service. Do not replace useful backend errors with only “Something went wrong”.
+Delete confirmation
+Always confirm before deleting.
+Edit mode
+Use the same form; visually show that the user is editing and provide a Cancel Edit button.
+Empty list
+Show a friendly “No records found” row instead of a blank table.
+Escaping
+Render user-provided text safely; prefer textContent over injecting raw HTML.
+Re-fetch
+After create/update/delete, re-fetch the list from the service layer.
+Responsive layout
+Forms and tables should remain usable on laptop-sized screens; horizontal scrolling is acceptable for wide tables.
+16. Files the Frontend Developer Must Not Modify
+database/schema.sql
+database/sample_data.sql
+backend/.env
+backend/db.js
+backend/server.js
+backend/package.json
+backend/package-lock.json
+backend/routes/*
+backend/controllers/*
+The only exception is Stage 16 integration, which will be performed together after both parallel tracks are finished.
+17. Stage 16 Integration Preparation — Do This Before Handoff
+1.  Make sure USE_MOCK_API is still controlled from one place in config.js.
+2.  Search the entire frontend folder for direct fetch( calls. Except api.js, there should be none.
+3.  Search for hard-coded localhost:5000 strings. Except config.js/api.js, there should be none.
+4.  Search for old field aliases such as mobile, cardNo, stationName, fare. Replace them with frozen contract names.
+5.  Verify every dropdown stores IDs as values, not visible names.
+6.  Verify dashboard uses existing list service functions only.
+7.  Run all mock CRUD flows after a full page refresh.
+8.  Commit all work and ensure git status is clean.
+9.  Push the frontend branch. Do not merge it into the backend branch yet.
+17.1 What Stage 16 Should Look Like
+At integration time, the team should aim for the following sequence:
+Finished backend Stages 5–9
+        +
+Finished frontend Stages 10–15
+        ↓
+Create integration branch
+        ↓
+Merge frontend branch
+        ↓
+Set USE_MOCK_API = false
+        ↓
+Run backend on :5000
+        ↓
+Run frontend through local server
+        ↓
+Fix only contract mismatches discovered by real testing
+        ↓
+Complete end-to-end CRUD verification
+Because frontend work is restricted to frontend/ and backend work is restricted to backend/database areas, the merge should have very few or no file-level conflicts.
+18. Stage 16 Integration Test Matrix for the Team
+Area
+Integration test
+Passengers
+Create → list refresh → edit → list refresh → delete an unlinked passenger
+Cards
+Passenger dropdown loads → create METROxxxx card → edit balance → duplicate-card error shown
+Stations
+Create → edit → list filter → attempt delete when linked if applicable
+Transactions
+Card/station dropdowns load → create transaction → readable names shown → edit/delete
+Dashboard
+Counts match actual list lengths; recent transactions reflect database data
+Constraints
+Invalid mobile/card/balance/fare errors are surfaced cleanly
+Referential integrity
+Linked deletes return understandable messages instead of silently disappearing
+19. Definition of Done for Stages 10–15
+☐ All five pages exist and share consistent navigation/style.
+☐ Passenger CRUD UI works in mock mode.
+☐ Smart Card CRUD UI works in mock mode with passenger dropdown and METROxxxx validation.
+☐ Station CRUD UI works in mock mode.
+☐ Transaction CRUD UI works in mock mode with card and station dropdowns.
+☐ Dashboard shows four required counts and recent transactions.
+☐ Search/filter is client-side and functional.
+☐ All network access is centralized in api.js.
+☐ Mock behavior is centralized in mockApi.js.
+☐ Only config.js needs a mode change for real-backend integration.
+☐ No backend/database file has been modified.
+☐ Frontend branch is pushed and git status is clean.
+20. Recommended Work Order for the Frontend Developer
+Order
+Task
+1
+Clone Stage 4 baseline and create frontend-stages-10-15 branch.
+2
+Build folder structure + common navigation + style.css.
+3
+Build config.js/api.js/mockApi.js/common.js.
+4
+Complete Passenger page.
+5
+Complete Smart Card page.
+6
+Complete Station page.
+7
+Complete Transaction page.
+8
+Complete Dashboard and client-side filters.
+9
+Run mock end-to-end checks and responsive checks.
+10
+Run Stage 16 preparation checklist, commit, push, and hand branch back.
+21. Final Handoff Message the Frontend Developer Should Send
+When finished, send the backend developer a short handoff containing:
+Frontend branch name and latest commit hash.
+Confirmation that only frontend/ was modified.
+How to run the frontend locally.
+Current config.js value (USE_MOCK_API should still be true until Stage 16).
+Any known UI issue or API assumption that could not be tested against the real backend.
+Confirmation that all Stage 10–15 Definition of Done items passed.
+22. Key Principle
+The frontend must depend on a stable service contract, not on backend implementation details.
+If this guide is followed, the frontend developer can finish Stages 10–15 while the backend developer finishes Stages 5–9, and Stage 16 becomes controlled integration rather than a rewrite.
+END OF FRONTEND STAGES 10–15 HANDOFF GUIDE

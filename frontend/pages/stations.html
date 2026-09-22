@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manage Stations</title>
+    <link rel="stylesheet" href="../css/style.css" />
+    <link rel="stylesheet" href="../css/stations.css" />
+  </head>
+  <body>
+    <nav>
+      <a href="index.html">Dashboard</a> |
+      <a href="passengers.html">Passengers</a> |
+      <a href="cards.html">Smart Cards</a> |
+      <a href="stations.html">Stations</a> |
+      <a href="transactions.html">Transactions</a>
+    </nav>
+
+    <main>
+      <h1>Manage Stations</h1>
+      <div id="message-area" class="message-hidden"></div>
+
+      <section class="form-section">
+        <h2 id="form-title">Add New Station</h2>
+        <form id="station-form">
+          <input type="hidden" id="station_id" name="station_id" />
+
+          <div class="form-group">
+            <label for="station_name">Station Name *</label>
+            <input type="text" id="station_name" name="station_name" required />
+          </div>
+
+          <div class="form-group">
+            <label for="line_name">Line Name *</label>
+            <input type="text" id="line_name" name="line_name" required />
+          </div>
+
+          <button type="submit" id="submit-btn">Save</button>
+          <button type="button" id="cancel-btn" style="display: none">
+            Cancel
+          </button>
+        </form>
+      </section>
+
+      <section class="table-section">
+        <h2>Station List</h2>
+
+        <!-- Added Client-Side Search Bar -->
+        <div style="margin-bottom: 15px">
+          <input
+            type="text"
+            id="search-input"
+            placeholder="Search by station name or line..."
+            style="
+              width: 100%;
+              padding: 10px;
+              border: 1px solid #ccc;
+              border-radius: 4px;
+            "
+          />
+        </div>
+
+        <table id="stations-table">
+          <thead>
+            <tr>
+              <th>Station ID</th>
+              <th>Station Name</th>
+              <th>Line</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="stations-body">
+            <tr id="empty-state">
+              <td colspan="4">No records found</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+
+    <script src="../js/config.js"></script>
+    <script src="../js/common.js"></script>
+    <script src="../js/mockApi.js"></script>
+    <script src="../js/api.js"></script>
+
+    <script src="../js/stations.js"></script>
+  </body>
+</html>

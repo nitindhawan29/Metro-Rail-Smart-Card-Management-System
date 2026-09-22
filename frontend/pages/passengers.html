@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manage Passengers</title>
+    <link rel="stylesheet" href="../css/style.css" />
+    <link rel="stylesheet" href="../css/passengers.css" />
+  </head>
+  <body>
+    <nav>
+      <a href="index.html">Dashboard</a> |
+      <a href="passengers.html">Passengers</a> |
+      <a href="cards.html">Smart Cards</a> |
+      <a href="stations.html">Stations</a> |
+      <a href="transactions.html">Transactions</a>
+    </nav>
+
+    <main>
+      <h1>Manage Passengers</h1>
+      <div id="message-area" class="message-hidden"></div>
+
+      <section class="form-section">
+        <h2 id="form-title">Add New Passenger</h2>
+        <form id="passenger-form">
+          <input type="hidden" id="passenger_id" name="passenger_id" />
+
+          <div class="form-group">
+            <label for="passenger_name">Passenger Name *</label>
+            <input
+              type="text"
+              id="passenger_name"
+              name="passenger_name"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="country_code">Country Code *</label>
+            <input
+              type="text"
+              id="country_code"
+              name="country_code"
+              placeholder="+91"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="mobile_number">Mobile Number *</label>
+            <input
+              type="text"
+              id="mobile_number"
+              name="mobile_number"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="email">Email Address</label>
+            <input type="email" id="email" name="email" />
+          </div>
+
+          <button type="submit" id="submit-btn">Save</button>
+          <button type="button" id="cancel-btn" style="display: none">
+            Cancel
+          </button>
+        </form>
+      </section>
+
+      <!-- Data Table Shell -->
+      <section class="table-section">
+        <h2>Passenger List</h2>
+
+        <!-- Added Client-Side Search Bar -->
+        <div style="margin-bottom: 15px">
+          <input
+            type="text"
+            id="search-input"
+            placeholder="Search by name, mobile, or email..."
+            style="
+              width: 100%;
+              padding: 10px;
+              border: 1px solid #ccc;
+              border-radius: 4px;
+            "
+          />
+        </div>
+
+        <table id="passengers-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Mobile</th>
+              <th>Email</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="passengers-body">
+            <tr id="empty-state">
+              <td colspan="5">No records found</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+
+    <script src="../js/config.js"></script>
+    <script src="../js/common.js"></script>
+    <script src="../js/mockApi.js"></script>
+    <script src="../js/api.js"></script>
+
+    <script src="../js/passengers.js"></script>
+  </body>
+</html>

@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Transactions</title>
+    <link rel="stylesheet" href="../css/style.css" />
+    <link rel="stylesheet" href="../css/transactions.css" />
+  </head>
+  <body>
+    <nav>
+      <a href="index.html">Dashboard</a> |
+      <a href="passengers.html">Passengers</a> |
+      <a href="cards.html">Smart Cards</a> |
+      <a href="stations.html">Stations</a> |
+      <a href="transactions.html">Transactions</a>
+    </nav>
+
+    <main>
+      <h1>Record Transaction</h1>
+      <div id="message-area" class="message-hidden"></div>
+
+      <section class="form-section">
+        <h2 id="form-title">New Transaction</h2>
+        <form id="transaction-form">
+          <input type="hidden" id="transaction_id" name="transaction_id" />
+
+          <div class="form-group">
+            <label for="card_id">Smart Card *</label>
+            <select id="card_id" name="card_id" required>
+              <option value="">Select a card...</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="station_id">Station *</label>
+            <select id="station_id" name="station_id" required>
+              <option value="">Select a station...</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="fare_amount">Fare Amount *</label>
+            <input
+              type="number"
+              id="fare_amount"
+              name="fare_amount"
+              min="0"
+              step="0.01"
+              required
+            />
+          </div>
+
+          <button type="submit" id="submit-btn">Save</button>
+          <button type="button" id="cancel-btn" style="display: none">
+            Cancel
+          </button>
+        </form>
+      </section>
+
+      <section class="table-section">
+        <h2>Transaction History</h2>
+
+        <!-- Client-side filtering by passenger/card/station -->
+        <div style="margin-bottom: 15px">
+          <input
+            type="text"
+            id="search-input"
+            placeholder="Search by passenger, card, or station..."
+            style="
+              width: 100%;
+              padding: 10px;
+              border: 1px solid #ccc;
+              border-radius: 4px;
+            "
+          />
+        </div>
+
+        <table id="transactions-table">
+          <thead>
+            <tr>
+              <th>Transaction ID</th>
+              <th>Passenger</th>
+              <th>Card Number</th>
+              <th>Station</th>
+              <th>Line</th>
+              <th>Date/Time</th>
+              <th>Fare</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="transactions-body">
+            <tr id="empty-state">
+              <td colspan="8">No records found</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+
+    <script src="../js/config.js"></script>
+    <script src="../js/common.js"></script>
+    <script src="../js/mockApi.js"></script>
+    <script src="../js/api.js"></script>
+
+    <script src="../js/transactions.js"></script>
+  </body>
+</html>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Smart Cards</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cards.css">
+</head>
+<body>
+    <nav>
+        <a href="index.html">Dashboard</a> | 
+        <a href="passengers.html">Passengers</a> | 
+        <a href="cards.html">Smart Cards</a> | 
+        <a href="stations.html">Stations</a> | 
+        <a href="transactions.html">Transactions</a>
+    </nav>
+
+    <main>
+        <h1>Manage Smart Cards</h1>
+        <div id="message-area" class="message-hidden"></div>
+
+        <section class="form-section">
+            <h2 id="form-title">Issue New Smart Card</h2>
+            <form id="card-form">
+                <input type="hidden" id="card_id" name="card_id">
+                
+                <div class="form-group">
+                    <label for="passenger_id">Passenger *</label>
+                    <select id="passenger_id" name="passenger_id" required>
+                        <option value="">Select a passenger...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="card_number">Card Number *</label>
+                    <input type="text" id="card_number" name="card_number" placeholder="METRO0001" pattern="^METRO[0-9]{4}$" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="balance">Initial Balance *</label>
+                    <input type="number" id="balance" name="balance" min="0" step="0.01" value="0.00" required>
+                </div>
+
+                <button type="submit" id="submit-btn">Save</button>
+                <button type="button" id="cancel-btn" style="display: none;">Cancel</button>
+            </form>
+        </section>
+
+<section class="table-section">
+            <h2>Smart Card List</h2>
+            
+            <!-- Added Client-Side Search Bar -->
+            <div style="margin-bottom: 15px;">
+                <input type="text" id="search-input" placeholder="Search by card number or passenger name..." style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+            </div>
+
+            <table id="cards-table">
+                <thead>
+                    <tr>
+                        <th>Card ID</th>
+                        <th>Card Number</th>
+                        <th>Passenger</th>
+                        <th>Balance</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="cards-body">
+                    <tr id="empty-state"><td colspan="5">No records found</td></tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+    <script src="../js/config.js"></script>
+    <script src="../js/common.js"></script>
+    <script src="../js/mockApi.js"></script>
+    <script src="../js/api.js"></script>
+    
+    <!-- This 5th line changes depending on the page you are on -->
+    <script src="../js/cards.js"></script> 
+</body>
+</html>
+    
+</body>
+</html>
