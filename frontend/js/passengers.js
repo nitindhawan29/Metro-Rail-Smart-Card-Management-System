@@ -65,8 +65,8 @@ async function handleFormSubmit(e) {
   const email = document.getElementById("email").value.trim();
 
   // Strict Validation
-  if (!/^[+][1-9][0-9]{0,2}$/.test(countryCode)) {
-    return showMessage("Invalid country code. Format must be like +91", true);
+  if (!/^[+][1-9][0-9]{0,3}$/.test(countryCode)) {
+    return showMessage("Country code must start with + and contain 1 to 4 digits.", true);
   }
   if (!/^[0-9]{4,14}$/.test(mobile)) {
     return showMessage(

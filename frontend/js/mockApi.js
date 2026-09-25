@@ -102,10 +102,36 @@ function mockUpdateCard(id, data) {
 }
 
 function mockDeleteCard(id) {
+
   return simulateNetwork().then(() => {
-    mockDatabase.cards = mockDatabase.cards.filter((c) => c.card_id != id);
-    saveMockDB(); 
-    return { success: true, message: "Smart card deleted successfully" };
+
+    const isLinked =
+      mockDatabase.transactions.some(
+        (t) => t.card_id == id
+      );
+
+
+    if (isLinked) {
+
+      throw new Error(
+        "Smart card cannot be deleted because transactions are linked to this card"
+      );
+    }
+
+
+    mockDatabase.cards =
+      mockDatabase.cards.filter(
+        (c) => c.card_id != id
+      );
+
+
+    saveMockDB();
+
+
+    return {
+      success: true,
+      message: "Smart card deleted successfully"
+    };
   });
 }
 
@@ -147,57 +173,360 @@ function mockDeleteStation(id) {
   });
 }
 
-// --- TRANSACTION MOCKS ---
+// -------------------------
+// CREATE transaction
+// -------------------------
+
 function mockCreateTransaction(data) {
-    return simulateNetwork().then(() => {
-        const cardIndex = mockDatabase.cards.findIndex(c => c.card_id == data.card_id);
-        if (cardIndex === -1) throw new Error("Smart card not found.");
-        
-        const card = mockDatabase.cards[cardIndex];
-        if (card.balance < data.fare_amount) {
-            throw new Error(`Insufficient balance. Current balance is ₹ ${card.balance.toFixed(2)}`);
-        }
-        
-        mockDatabase.cards[cardIndex].balance -= data.fare_amount;
 
-        const newId = mockDatabase.transactions.length > 0 ? Math.max(...mockDatabase.transactions.map(t => t.transaction_id)) + 1 : 1;
-        
-        const now = new Date();
-        const dateStr = now.toISOString().replace('T', ' ').substring(0, 19);
-
-        mockDatabase.transactions.push({ 
-            transaction_id: newId, 
-            transaction_date: dateStr,
-            ...data 
-        });
-        
-        saveMockDB();
-        return { success: true, message: "Transaction recorded and fare deducted successfully" };
-    });
-}
-
-function mockUpdateTransaction(id, data) {
   return simulateNetwork().then(() => {
-    const index = mockDatabase.transactions.findIndex(
-      (t) => t.transaction_id == id
-    );
-    if (index === -1) throw new Error("Transaction not found");
 
-    mockDatabase.transactions[index] = {
-      ...mockDatabase.transactions[index],
-      ...data,
-    };
+    const cardIndex =
+      mockDatabase.cards.findIndex(
+        (c) => c.card_id == data.card_id
+      );
+
+
+    if (cardIndex === -1) {
+      throw new Error(
+        "Smart card not found"
+      );
+    }
+
+
+    const stationExists =
+      mockDatabase.stations.some(
+        (s) => s.station_id == data.station_id
+      );
+
+
+    if (!stationExists) {
+      throw new Error(
+        "Station not found"
+      );
+    }
+
+
+    const card =
+      mockDatabase.cards[cardIndex];
+
+
+    const fare =
+      Number(data.fare_amount);
+
+
+    if (Number(card.balance) < fare) {
+
+      throw new Error(
+        `Insufficient balance. Current balance is ₹${Number(card.balance).toFixed(2)}`
+      );
+    }
+
+
+    card.balance =
+      Number(card.balance) - fare;
+
+
+    const newId =
+      mockDatabase.transactions.length > 0
+        ? Math.max(
+            ...mockDatabase.transactions.map(
+              (t) => t.transaction_id
+            )
+          ) + 1
+        : 1;
+
+
+    const now =
+      new Date();
+
+
+    const dateStr =
+      now
+        .toISOString()
+        .replace('T', ' ')
+        .substring(0, 19);
+
+
+    mockDatabase.transactions.push({
+      transaction_id: newId,
+      transaction_date: dateStr,
+      ...data
+    });
+
+
     saveMockDB();
-    return { success: true, message: "Transaction updated successfully" };
+
+
+    return {
+      success: true,
+      message:
+        "Transaction recorded and fare deducted successfully",
+      transaction_id: newId,
+      remaining_balance:
+        card.balance
+    };
   });
 }
 
-function mockDeleteTransaction(id) {
+
+
+// -------------------------
+// UPDATE transaction
+// -------------------------
+
+function mockUpdateTransaction(id, data) {
+
   return simulateNetwork().then(() => {
-    mockDatabase.transactions = mockDatabase.transactions.filter(
-      (t) => t.transaction_id != id
-    );
+
+    const transactionIndex =
+      mockDatabase.transactions.findIndex(
+        (t) => t.transaction_id == id
+      );
+
+
+    if (transactionIndex === -1) {
+      throw new Error(
+        "Transaction not found"
+      );
+    }
+
+
+    const stationExists =
+      mockDatabase.stations.some(
+        (s) => s.station_id == data.station_id
+      );
+
+
+    if (!stationExists) {
+      throw new Error(
+        "Station not found"
+      );
+    }
+
+
+    const oldTransaction =
+      mockDatabase.transactions[
+        transactionIndex
+      ];
+
+
+    const oldCardIndex =
+      mockDatabase.cards.findIndex(
+        (c) =>
+          c.card_id == oldTransaction.card_id
+      );
+
+
+    const newCardIndex =
+      mockDatabase.cards.findIndex(
+        (c) => c.card_id == data.card_id
+      );
+
+
+    if (newCardIndex === -1) {
+      throw new Error(
+        "Smart card not found"
+      );
+    }
+
+
+    const oldFare =
+      Number(oldTransaction.fare_amount);
+
+
+    const newFare =
+      Number(data.fare_amount);
+
+
+    let remainingBalance;
+
+
+    // Same card
+    if (
+      oldTransaction.card_id ==
+      data.card_id
+    ) {
+
+      const card =
+        mockDatabase.cards[
+          newCardIndex
+        ];
+
+
+      const availableBalance =
+        Number(card.balance) +
+        oldFare;
+
+
+      if (
+        availableBalance <
+        newFare
+      ) {
+
+        throw new Error(
+          `Insufficient balance. Available balance after reversing old fare is ₹${availableBalance.toFixed(2)}`
+        );
+      }
+
+
+      card.balance =
+        availableBalance -
+        newFare;
+
+
+      remainingBalance =
+        card.balance;
+    }
+
+
+    // Card changed
+    else {
+
+      const newCard =
+        mockDatabase.cards[
+          newCardIndex
+        ];
+
+
+      if (
+        Number(newCard.balance) <
+        newFare
+      ) {
+
+        throw new Error(
+          `Insufficient balance on new smart card. Current balance is ₹${Number(newCard.balance).toFixed(2)}`
+        );
+      }
+
+
+      // Refund old card
+      mockDatabase.cards[
+        oldCardIndex
+      ].balance =
+        Number(
+          mockDatabase.cards[
+            oldCardIndex
+          ].balance
+        ) +
+        oldFare;
+
+
+      // Deduct from new card
+      newCard.balance =
+        Number(newCard.balance) -
+        newFare;
+
+
+      remainingBalance =
+        newCard.balance;
+    }
+
+
+    mockDatabase.transactions[
+      transactionIndex
+    ] = {
+      ...oldTransaction,
+      ...data
+    };
+
+
     saveMockDB();
-    return { success: true, message: "Transaction deleted successfully" };
+
+
+    return {
+      success: true,
+      message:
+        "Transaction updated and card balance adjusted successfully",
+      remaining_balance:
+        remainingBalance
+    };
+  });
+}
+
+
+
+// -------------------------
+// DELETE transaction
+// -------------------------
+
+function mockDeleteTransaction(id) {
+
+  return simulateNetwork().then(() => {
+
+    const transactionIndex =
+      mockDatabase.transactions.findIndex(
+        (t) => t.transaction_id == id
+      );
+
+
+    if (transactionIndex === -1) {
+      throw new Error(
+        "Transaction not found"
+      );
+    }
+
+
+    const transaction =
+      mockDatabase.transactions[
+        transactionIndex
+      ];
+
+
+    const cardIndex =
+      mockDatabase.cards.findIndex(
+        (c) =>
+          c.card_id ==
+          transaction.card_id
+      );
+
+
+    if (cardIndex === -1) {
+      throw new Error(
+        "Smart card not found"
+      );
+    }
+
+
+    const fare =
+      Number(
+        transaction.fare_amount
+      );
+
+
+    // Refund fare
+    mockDatabase.cards[
+      cardIndex
+    ].balance =
+      Number(
+        mockDatabase.cards[
+          cardIndex
+        ].balance
+      ) +
+      fare;
+
+
+    const remainingBalance =
+      mockDatabase.cards[
+        cardIndex
+      ].balance;
+
+
+    mockDatabase.transactions.splice(
+      transactionIndex,
+      1
+    );
+
+
+    saveMockDB();
+
+
+    return {
+      success: true,
+      message:
+        "Transaction deleted and fare refunded successfully",
+      remaining_balance:
+        remainingBalance
+    };
   });
 }

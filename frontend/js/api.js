@@ -1,11 +1,29 @@
 async function request(path, options = {}) {
-  const response = await fetch(`${APP_CONFIG.API_BASE_URL}${path}`, {
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
-    ...options,
-  });
+
+  const response = await fetch(
+    `${APP_CONFIG.API_BASE_URL}${path}`,
+    {
+      ...options,
+
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.headers || {})
+      }
+    }
+  );
+
+
   const body = await response.json();
-  if (!response.ok || body.success === false)
-    throw new Error(body.message || "Request failed");
+
+
+  if (!response.ok || body.success === false) {
+
+    throw new Error(
+      body.message || "Request failed"
+    );
+  }
+
+
   return body;
 }
 

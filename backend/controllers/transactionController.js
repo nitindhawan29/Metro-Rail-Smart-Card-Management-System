@@ -66,6 +66,7 @@ function validateTransaction(data) {
 
 // -------------------------
 // Find transaction helper
+// Used for GET
 // -------------------------
 
 const findTransactionById = async (id) => {
@@ -109,31 +110,15 @@ const findTransactionById = async (id) => {
 
 
 // -------------------------
-// Check card exists
-// -------------------------
-
-const cardExists = async (card_id) => {
-
-    const [rows] = await pool.query(
-        `SELECT card_id
-         FROM SmartCards
-         WHERE card_id = ?`,
-        [card_id]
-    );
-
-
-    return rows.length > 0;
-};
-
-
-
-// -------------------------
 // Check station exists
 // -------------------------
 
-const stationExists = async (station_id) => {
+const stationExists = async (
+    connection,
+    station_id
+) => {
 
-    const [rows] = await pool.query(
+    const [rows] = await connection.query(
         `SELECT station_id
          FROM Stations
          WHERE station_id = ?`,
@@ -199,7 +184,8 @@ const getAllTransactions = async (req, res) => {
 
         res.status(500).json({
             success: false,
-            message: 'Unable to fetch transactions'
+            message:
+                'Unable to fetch transactions'
         });
     }
 };
@@ -210,7 +196,10 @@ const getAllTransactions = async (req, res) => {
 // GET transaction by ID
 // -------------------------
 
-const getTransactionById = async (req, res) => {
+const getTransactionById = async (
+    req,
+    res
+) => {
 
     try {
 
@@ -225,7 +214,8 @@ const getTransactionById = async (req, res) => {
 
             return res.status(404).json({
                 success: false,
-                message: 'Transaction not found'
+                message:
+                    'Transaction not found'
             });
         }
 
@@ -243,7 +233,8 @@ const getTransactionById = async (req, res) => {
 
         res.status(500).json({
             success: false,
-            message: 'Unable to fetch transaction'
+            message:
+                'Unable to fetch transaction'
         });
     }
 };
@@ -252,9 +243,16 @@ const getTransactionById = async (req, res) => {
 
 // -------------------------
 // CREATE transaction
+// Deduct fare from card
 // -------------------------
 
-const createTransaction = async (req, res) => {
+const createTransaction = async (
+    req,
+    res
+) => {
+
+    let connection;
+
 
     try {
 
@@ -278,24 +276,25 @@ const createTransaction = async (req, res) => {
         }
 
 
-        const cardFound =
-            await cardExists(card_id);
+        connection =
+            await pool.getConnection();
 
 
-        if (!cardFound) {
-
-            return res.status(404).json({
-                success: false,
-                message: 'Smart card not found'
-            });
-        }
+        await connection.beginTransaction();
 
 
+        // Check station
         const stationFound =
-            await stationExists(station_id);
+            await stationExists(
+                connection,
+                station_id
+            );
 
 
         if (!stationFound) {
+
+            await connection.rollback();
+
 
             return res.status(404).json({
                 success: false,
@@ -304,48 +303,127 @@ const createTransaction = async (req, res) => {
         }
 
 
-        const [result] = await pool.query(
-            `INSERT INTO Transactions
-            (
-                card_id,
-                station_id,
-                fare_amount
-            )
-            VALUES (?, ?, ?)`,
+        /*
+            Lock the selected card.
+
+            FOR UPDATE prevents two simultaneous
+            transactions from spending the same
+            card balance at the same time.
+        */
+        const [cardRows] =
+            await connection.query(
+                `SELECT
+                    card_id,
+                    balance
+                 FROM SmartCards
+                 WHERE card_id = ?
+                 FOR UPDATE`,
+                [card_id]
+            );
+
+
+        if (cardRows.length === 0) {
+
+            await connection.rollback();
+
+
+            return res.status(404).json({
+                success: false,
+                message:
+                    'Smart card not found'
+            });
+        }
+
+
+        const fare =
+            Number(fare_amount);
+
+
+        const currentBalance =
+            Number(cardRows[0].balance);
+
+
+        // Check sufficient balance
+        if (currentBalance < fare) {
+
+            await connection.rollback();
+
+
+            return res.status(409).json({
+                success: false,
+                message:
+                    `Insufficient balance. Current balance is ₹${currentBalance.toFixed(2)}`
+            });
+        }
+
+
+        // Create transaction
+        const [result] =
+            await connection.query(
+                `INSERT INTO Transactions
+                (
+                    card_id,
+                    station_id,
+                    fare_amount
+                )
+                VALUES (?, ?, ?)`,
+                [
+                    card_id,
+                    station_id,
+                    fare
+                ]
+            );
+
+
+        // Deduct fare
+        await connection.query(
+            `UPDATE SmartCards
+             SET balance = balance - ?
+             WHERE card_id = ?`,
             [
-                card_id,
-                station_id,
-                Number(fare_amount)
+                fare,
+                card_id
             ]
         );
 
 
+        // Save both operations together
+        await connection.commit();
+
+
         res.status(201).json({
             success: true,
-            message: 'Transaction added successfully',
-            transaction_id: result.insertId
+            message:
+                'Transaction recorded and fare deducted successfully',
+            transaction_id:
+                result.insertId,
+            remaining_balance:
+                currentBalance - fare
         });
 
 
     } catch (error) {
 
-        console.error(error);
-
-
-        if (error.code === 'ER_NO_REFERENCED_ROW_2') {
-
-            return res.status(404).json({
-                success: false,
-                message:
-                    'Referenced smart card or station does not exist'
-            });
+        if (connection) {
+            await connection.rollback();
         }
+
+
+        console.error(error);
 
 
         res.status(500).json({
             success: false,
-            message: 'Unable to add transaction'
+            message:
+                'Unable to add transaction'
         });
+
+
+    } finally {
+
+        if (connection) {
+            connection.release();
+        }
     }
 };
 
@@ -353,9 +431,16 @@ const createTransaction = async (req, res) => {
 
 // -------------------------
 // UPDATE transaction
+// Adjust card balance
 // -------------------------
 
-const updateTransaction = async (req, res) => {
+const updateTransaction = async (
+    req,
+    res
+) => {
+
+    let connection;
+
 
     try {
 
@@ -382,37 +467,55 @@ const updateTransaction = async (req, res) => {
         }
 
 
-        const transaction =
-            await findTransactionById(id);
+        connection =
+            await pool.getConnection();
 
 
-        if (!transaction) {
+        await connection.beginTransaction();
+
+
+        /*
+            Lock transaction because we are
+            going to reverse its old fare.
+        */
+        const [transactionRows] =
+            await connection.query(
+                `SELECT
+                    transaction_id,
+                    card_id,
+                    station_id,
+                    fare_amount
+                 FROM Transactions
+                 WHERE transaction_id = ?
+                 FOR UPDATE`,
+                [id]
+            );
+
+
+        if (transactionRows.length === 0) {
+
+            await connection.rollback();
+
 
             return res.status(404).json({
                 success: false,
-                message: 'Transaction not found'
-            });
-        }
-
-
-        const cardFound =
-            await cardExists(card_id);
-
-
-        if (!cardFound) {
-
-            return res.status(404).json({
-                success: false,
-                message: 'Smart card not found'
+                message:
+                    'Transaction not found'
             });
         }
 
 
         const stationFound =
-            await stationExists(station_id);
+            await stationExists(
+                connection,
+                station_id
+            );
 
 
         if (!stationFound) {
+
+            await connection.rollback();
+
 
             return res.status(404).json({
                 success: false,
@@ -421,46 +524,247 @@ const updateTransaction = async (req, res) => {
         }
 
 
-        await pool.query(
+        const oldTransaction =
+            transactionRows[0];
+
+
+        const oldCardId =
+            Number(oldTransaction.card_id);
+
+
+        const newCardId =
+            Number(card_id);
+
+
+        const oldFare =
+            Number(oldTransaction.fare_amount);
+
+
+        const newFare =
+            Number(fare_amount);
+
+
+        /*
+            Lock both cards if card changes.
+
+            Sorting IDs keeps lock order
+            consistent and reduces deadlock risk.
+        */
+        const cardIds = [
+            ...new Set([
+                oldCardId,
+                newCardId
+            ])
+        ].sort(
+            (a, b) => a - b
+        );
+
+
+        const placeholders =
+            cardIds
+                .map(() => '?')
+                .join(', ');
+
+
+        const [cardRows] =
+            await connection.query(
+                `SELECT
+                    card_id,
+                    balance
+                 FROM SmartCards
+                 WHERE card_id IN (${placeholders})
+                 ORDER BY card_id
+                 FOR UPDATE`,
+                cardIds
+            );
+
+
+        const cardMap =
+            new Map(
+                cardRows.map(
+                    (card) => [
+                        Number(card.card_id),
+                        Number(card.balance)
+                    ]
+                )
+            );
+
+
+        if (!cardMap.has(newCardId)) {
+
+            await connection.rollback();
+
+
+            return res.status(404).json({
+                success: false,
+                message:
+                    'Smart card not found'
+            });
+        }
+
+
+        let remainingBalance;
+
+
+        // -------------------------
+        // Same card
+        // -------------------------
+
+        if (oldCardId === newCardId) {
+
+            const currentBalance =
+                cardMap.get(oldCardId);
+
+
+            /*
+                Reverse old fare first.
+
+                Example:
+
+                current balance = 470
+                old fare = 30
+
+                Available again = 500
+            */
+            const availableBalance =
+                currentBalance + oldFare;
+
+
+            if (availableBalance < newFare) {
+
+                await connection.rollback();
+
+
+                return res.status(409).json({
+                    success: false,
+                    message:
+                        `Insufficient balance. Available balance after reversing old fare is ₹${availableBalance.toFixed(2)}`
+                });
+            }
+
+
+            remainingBalance =
+                availableBalance - newFare;
+
+
+            await connection.query(
+                `UPDATE SmartCards
+                 SET balance = ?
+                 WHERE card_id = ?`,
+                [
+                    remainingBalance,
+                    oldCardId
+                ]
+            );
+        }
+
+
+        // -------------------------
+        // Card changed
+        // -------------------------
+
+        else {
+
+            const oldCardBalance =
+                cardMap.get(oldCardId);
+
+
+            const newCardBalance =
+                cardMap.get(newCardId);
+
+
+            if (newCardBalance < newFare) {
+
+                await connection.rollback();
+
+
+                return res.status(409).json({
+                    success: false,
+                    message:
+                        `Insufficient balance on new smart card. Current balance is ₹${newCardBalance.toFixed(2)}`
+                });
+            }
+
+
+            // Refund old card
+            await connection.query(
+                `UPDATE SmartCards
+                 SET balance = balance + ?
+                 WHERE card_id = ?`,
+                [
+                    oldFare,
+                    oldCardId
+                ]
+            );
+
+
+            // Charge new card
+            await connection.query(
+                `UPDATE SmartCards
+                 SET balance = balance - ?
+                 WHERE card_id = ?`,
+                [
+                    newFare,
+                    newCardId
+                ]
+            );
+
+
+            remainingBalance =
+                newCardBalance - newFare;
+        }
+
+
+        // Update transaction record
+        await connection.query(
             `UPDATE Transactions
              SET card_id = ?,
                  station_id = ?,
                  fare_amount = ?
              WHERE transaction_id = ?`,
             [
-                card_id,
+                newCardId,
                 station_id,
-                Number(fare_amount),
+                newFare,
                 id
             ]
         );
 
 
+        await connection.commit();
+
+
         res.status(200).json({
             success: true,
-            message: 'Transaction updated successfully'
+            message:
+                'Transaction updated and card balance adjusted successfully',
+            remaining_balance:
+                remainingBalance
         });
 
 
     } catch (error) {
 
-        console.error(error);
-
-
-        if (error.code === 'ER_NO_REFERENCED_ROW_2') {
-
-            return res.status(404).json({
-                success: false,
-                message:
-                    'Referenced smart card or station does not exist'
-            });
+        if (connection) {
+            await connection.rollback();
         }
+
+
+        console.error(error);
 
 
         res.status(500).json({
             success: false,
-            message: 'Unable to update transaction'
+            message:
+                'Unable to update transaction'
         });
+
+
+    } finally {
+
+        if (connection) {
+            connection.release();
+        }
     }
 };
 
@@ -468,46 +772,156 @@ const updateTransaction = async (req, res) => {
 
 // -------------------------
 // DELETE transaction
+// Refund fare to card
 // -------------------------
 
-const deleteTransaction = async (req, res) => {
+const deleteTransaction = async (
+    req,
+    res
+) => {
+
+    let connection;
+
 
     try {
 
         const { id } = req.params;
 
 
-        const [result] = await pool.query(
+        connection =
+            await pool.getConnection();
+
+
+        await connection.beginTransaction();
+
+
+        // Lock transaction
+        const [transactionRows] =
+            await connection.query(
+                `SELECT
+                    transaction_id,
+                    card_id,
+                    fare_amount
+                 FROM Transactions
+                 WHERE transaction_id = ?
+                 FOR UPDATE`,
+                [id]
+            );
+
+
+        if (transactionRows.length === 0) {
+
+            await connection.rollback();
+
+
+            return res.status(404).json({
+                success: false,
+                message:
+                    'Transaction not found'
+            });
+        }
+
+
+        const transaction =
+            transactionRows[0];
+
+
+        const cardId =
+            Number(transaction.card_id);
+
+
+        const fare =
+            Number(transaction.fare_amount);
+
+
+        // Lock card
+        const [cardRows] =
+            await connection.query(
+                `SELECT
+                    card_id,
+                    balance
+                 FROM SmartCards
+                 WHERE card_id = ?
+                 FOR UPDATE`,
+                [cardId]
+            );
+
+
+        if (cardRows.length === 0) {
+
+            await connection.rollback();
+
+
+            return res.status(404).json({
+                success: false,
+                message:
+                    'Smart card not found'
+            });
+        }
+
+
+        const currentBalance =
+            Number(cardRows[0].balance);
+
+
+        const refundedBalance =
+            currentBalance + fare;
+
+
+        // Refund fare
+        await connection.query(
+            `UPDATE SmartCards
+             SET balance = balance + ?
+             WHERE card_id = ?`,
+            [
+                fare,
+                cardId
+            ]
+        );
+
+
+        // Delete transaction
+        await connection.query(
             `DELETE FROM Transactions
              WHERE transaction_id = ?`,
             [id]
         );
 
 
-        if (result.affectedRows === 0) {
-
-            return res.status(404).json({
-                success: false,
-                message: 'Transaction not found'
-            });
-        }
+        await connection.commit();
 
 
         res.status(200).json({
             success: true,
-            message: 'Transaction deleted successfully'
+            message:
+                'Transaction deleted and fare refunded successfully',
+            remaining_balance:
+                refundedBalance
         });
 
 
     } catch (error) {
+
+        if (connection) {
+            await connection.rollback();
+        }
+
 
         console.error(error);
 
 
         res.status(500).json({
             success: false,
-            message: 'Unable to delete transaction'
+            message:
+                'Unable to delete transaction'
         });
+
+
+    } finally {
+
+        if (connection) {
+            connection.release();
+        }
     }
 };
 
