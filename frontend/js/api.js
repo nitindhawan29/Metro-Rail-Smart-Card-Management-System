@@ -29,14 +29,10 @@ async function request(path, options = {}) {
 
 // Passenger Service API
 async function getPassengers() {
-  if (APP_CONFIG.USE_MOCK_API) return simulateNetwork(mockDatabase.passengers);
   return await request("/passengers");
 }
 
-//
-
 async function createPassenger(data) {
-  if (APP_CONFIG.USE_MOCK_API) return mockCreatePassenger(data);
   return await request("/passengers", {
     method: "POST",
     body: JSON.stringify(data),
@@ -44,7 +40,6 @@ async function createPassenger(data) {
 }
 
 async function updatePassenger(id, data) {
-  if (APP_CONFIG.USE_MOCK_API) return mockUpdatePassenger(id, data);
   return await request(`/passengers/${id}`, {
     method: "PUT",
     body: JSON.stringify(data),
@@ -52,19 +47,15 @@ async function updatePassenger(id, data) {
 }
 
 async function deletePassenger(id) {
-  if (APP_CONFIG.USE_MOCK_API) return mockDeletePassenger(id);
   return await request(`/passengers/${id}`, { method: "DELETE" });
 }
 
-//
-
+// Cards API
 async function getCards() {
-  if (APP_CONFIG.USE_MOCK_API) return simulateNetwork(mockDatabase.cards);
   return await request("/cards");
 }
 
 async function createCard(data) {
-  if (APP_CONFIG.USE_MOCK_API) return mockCreateCard(data);
   return await request("/cards", {
     method: "POST",
     body: JSON.stringify(data),
@@ -72,7 +63,6 @@ async function createCard(data) {
 }
 
 async function updateCard(id, data) {
-  if (APP_CONFIG.USE_MOCK_API) return mockUpdateCard(id, data);
   return await request(`/cards/${id}`, {
     method: "PUT",
     body: JSON.stringify(data),
@@ -80,19 +70,15 @@ async function updateCard(id, data) {
 }
 
 async function deleteCard(id) {
-  if (APP_CONFIG.USE_MOCK_API) return mockDeleteCard(id);
   return await request(`/cards/${id}`, { method: "DELETE" });
 }
 
-//
-
+// Stations API
 async function getStations() {
-  if (APP_CONFIG.USE_MOCK_API) return simulateNetwork(mockDatabase.stations);
   return await request("/stations");
 }
 
 async function createStation(data) {
-  if (APP_CONFIG.USE_MOCK_API) return mockCreateStation(data);
   return await request("/stations", {
     method: "POST",
     body: JSON.stringify(data),
@@ -100,7 +86,6 @@ async function createStation(data) {
 }
 
 async function updateStation(id, data) {
-  if (APP_CONFIG.USE_MOCK_API) return mockUpdateStation(id, data);
   return await request(`/stations/${id}`, {
     method: "PUT",
     body: JSON.stringify(data),
@@ -108,20 +93,15 @@ async function updateStation(id, data) {
 }
 
 async function deleteStation(id) {
-  if (APP_CONFIG.USE_MOCK_API) return mockDeleteStation(id);
   return await request(`/stations/${id}`, { method: "DELETE" });
 }
 
-//
-
+// Transactions API
 async function getTransactions() {
-  if (APP_CONFIG.USE_MOCK_API)
-    return simulateNetwork(mockDatabase.transactions);
   return await request("/transactions");
 }
 
 async function createTransaction(data) {
-  if (APP_CONFIG.USE_MOCK_API) return mockCreateTransaction(data);
   return await request("/transactions", {
     method: "POST",
     body: JSON.stringify(data),
@@ -129,7 +109,6 @@ async function createTransaction(data) {
 }
 
 async function updateTransaction(id, data) {
-  if (APP_CONFIG.USE_MOCK_API) return mockUpdateTransaction(id, data);
   return await request(`/transactions/${id}`, {
     method: "PUT",
     body: JSON.stringify(data),
@@ -137,6 +116,5 @@ async function updateTransaction(id, data) {
 }
 
 async function deleteTransaction(id) {
-  if (APP_CONFIG.USE_MOCK_API) return mockDeleteTransaction(id);
   return await request(`/transactions/${id}`, { method: "DELETE" });
 }
