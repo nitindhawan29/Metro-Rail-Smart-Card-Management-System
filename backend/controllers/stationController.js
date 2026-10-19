@@ -151,9 +151,28 @@ const createStation = async (req, res) => {
     try {
 
         const {
+            station_id,
             station_name,
             line_name
         } = req.body;
+
+
+        if (station_id !== undefined && station_id !== null && station_id !== '') {
+            const stationIdNum = Number(station_id);
+            if (!Number.isInteger(stationIdNum) || stationIdNum <= 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Station ID must be a positive integer'
+                });
+            }
+            const existingStation = await findStationById(stationIdNum);
+            if (existingStation) {
+                return res.status(409).json({
+                    success: false,
+                    message: `Station with ID ${stationIdNum} already exists`
+                });
+            }
+        }
 
 
         const validationError =
@@ -169,24 +188,44 @@ const createStation = async (req, res) => {
         }
 
 
-        const [result] = await pool.query(
-            `INSERT INTO Stations
-            (
-                station_name,
-                line_name
-            )
-            VALUES (?, ?)`,
-            [
-                station_name.trim(),
-                line_name.trim()
-            ]
-        );
+        const stationIdNum = station_id !== undefined && station_id !== null && station_id !== '' ? Number(station_id) : null;
+        let result;
+
+        if (stationIdNum !== null) {
+            [result] = await pool.query(
+                `INSERT INTO Stations
+                (
+                    station_id,
+                    station_name,
+                    line_name
+                )
+                VALUES (?, ?, ?)`,
+                [
+                    stationIdNum,
+                    station_name.trim(),
+                    line_name.trim()
+                ]
+            );
+        } else {
+            [result] = await pool.query(
+                `INSERT INTO Stations
+                (
+                    station_name,
+                    line_name
+                )
+                VALUES (?, ?)`,
+                [
+                    station_name.trim(),
+                    line_name.trim()
+                ]
+            );
+        }
 
 
         res.status(201).json({
             success: true,
             message: 'Station added successfully',
-            station_id: result.insertId
+            station_id: stationIdNum || result.insertId
         });
 
 

@@ -208,10 +208,29 @@ const createCard = async (req, res) => {
     try {
 
         const {
+            card_id,
             passenger_id,
             card_number,
             balance
         } = req.body;
+
+
+        if (card_id !== undefined && card_id !== null && card_id !== '') {
+            const cardIdNum = Number(card_id);
+            if (!Number.isInteger(cardIdNum) || cardIdNum <= 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Card ID must be a positive integer'
+                });
+            }
+            const existingCard = await findCardById(cardIdNum);
+            if (existingCard) {
+                return res.status(409).json({
+                    success: false,
+                    message: `Smart card with ID ${cardIdNum} already exists`
+                });
+            }
+        }
 
 
         const validationError =
@@ -250,26 +269,48 @@ const createCard = async (req, res) => {
                 : Number(balance);
 
 
-        const [result] = await pool.query(
-            `INSERT INTO SmartCards
-            (
-                passenger_id,
-                card_number,
-                balance
-            )
-            VALUES (?, ?, ?)`,
-            [
-                passenger_id,
-                card_number,
-                initialBalance
-            ]
-        );
+        const cardIdNum = card_id !== undefined && card_id !== null && card_id !== '' ? Number(card_id) : null;
+        let result;
+
+        if (cardIdNum !== null) {
+            [result] = await pool.query(
+                `INSERT INTO SmartCards
+                (
+                    card_id,
+                    passenger_id,
+                    card_number,
+                    balance
+                )
+                VALUES (?, ?, ?, ?)`,
+                [
+                    cardIdNum,
+                    passenger_id,
+                    card_number,
+                    initialBalance
+                ]
+            );
+        } else {
+            [result] = await pool.query(
+                `INSERT INTO SmartCards
+                (
+                    passenger_id,
+                    card_number,
+                    balance
+                )
+                VALUES (?, ?, ?)`,
+                [
+                    passenger_id,
+                    card_number,
+                    initialBalance
+                ]
+            );
+        }
 
 
         res.status(201).json({
             success: true,
             message: 'Smart card added successfully',
-            card_id: result.insertId
+            card_id: cardIdNum || result.insertId
         });
 
 

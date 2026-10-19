@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Update Station - Metro Rail</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <nav>
+    <a href="index.html">Dashboard</a> |
+    <a href="passengers.html">Passengers</a> |
+    <a href="cards.html">Smart Cards</a> |
+    <a href="stations.html" class="active">Stations</a> |
+    <a href="transactions.html">Transactions</a>
+  </nav>
+
+  <div class="container">
+    <a href="stations.html" class="back-link">&larr; Back to Stations Menu</a>
+    <h2>Update Metro Station</h2>
+    <p>Step 1: Search and select the station below. Step 2: Click <strong>Update</strong> to open the edit form.</p>
+    <div id="message-area" class="message-hidden"></div>
+
+    <!-- Search / Filter Box -->
+    <div class="filter-box">
+      <div class="filter-title">🔍 Search & Filter Stations</div>
+      <div class="filter-grid">
+        <div class="filter-field">
+          <label>Station ID:</label>
+          <div class="input-with-sort">
+            <input type="text" id="filter-id" list="dl-id" placeholder="ID...">
+            <button type="button" class="sort-btn" id="sort-id" title="Toggle Sort">⇅</button>
+          </div>
+          <datalist id="dl-id"></datalist>
+        </div>
+
+        <div class="filter-field">
+          <label>Station Name:</label>
+          <div class="input-with-sort">
+            <input type="text" id="filter-name" list="dl-name" placeholder="Name...">
+            <button type="button" class="sort-btn" id="sort-name" title="Toggle Sort">⇅</button>
+          </div>
+          <datalist id="dl-name"></datalist>
+        </div>
+
+        <div class="filter-field">
+          <label>Line Name:</label>
+          <div class="input-with-sort">
+            <input type="text" id="filter-line" list="dl-line" placeholder="Line...">
+            <button type="button" class="sort-btn" id="sort-line" title="Toggle Sort">⇅</button>
+          </div>
+          <datalist id="dl-line"></datalist>
+        </div>
+      </div>
+
+      <div class="filter-actions">
+        <span id="record-count">Loading records...</span>
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-clear-filter">Reset Filters</button>
+      </div>
+    </div>
+
+    <!-- Data Table with Update Buttons -->
+    <div class="table-container">
+      <table id="station-update-table">
+        <thead>
+          <tr>
+            <th>Station ID</th>
+            <th>Station Name</th>
+            <th>Line Name</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="station-update-tbody">
+          <tr><td colspan="4">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Edit Form Panel -->
+    <div id="update-form-area" class="update-form-area" style="display: none;">
+      <h3>✏️ Edit Station (ID: <span id="display-station-id"></span>)</h3>
+      <form id="station-update-form">
+        <div class="form-group">
+          <label for="edit_station_id">Station ID (Primary Key)</label>
+          <input type="number" id="edit_station_id" readonly class="input-readonly">
+          <div class="form-hint">Primary Key cannot be changed during update.</div>
+        </div>
+
+        <div class="form-group">
+          <label for="edit_station_name">Station Name *</label>
+          <input type="text" id="edit_station_name" required>
+        </div>
+
+        <div class="form-group">
+          <label for="edit_line_name">Line Name *</label>
+          <input type="text" id="edit_line_name" required>
+        </div>
+
+        <button type="submit" class="btn btn-warning">Save Changes</button>
+        <button type="button" class="btn btn-secondary" onclick="cancelUpdate()">Cancel</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="../js/config.js"></script>
+  <script src="../js/common.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/stations.js"></script>
+</body>
+</html>
+

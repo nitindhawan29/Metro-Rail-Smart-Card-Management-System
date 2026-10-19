@@ -1,80 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Smart Cards</title>
-    <link rel="stylesheet" href="../css/style.css">
-    <link rel="stylesheet" href="../css/cards.css">
+  <meta charset="UTF-8">
+  <title>Smart Cards - Metro Rail</title>
+  <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
-    <nav>
-        <a href="index.html">Dashboard</a> | 
-        <a href="passengers.html">Passengers</a> | 
-        <a href="cards.html">Smart Cards</a> | 
-        <a href="stations.html">Stations</a> | 
-        <a href="transactions.html">Transactions</a>
-    </nav>
+  <nav>
+    <a href="index.html">Dashboard</a> |
+    <a href="passengers.html">Passengers</a> |
+    <a href="cards.html" class="active">Smart Cards</a> |
+    <a href="stations.html">Stations</a> |
+    <a href="transactions.html">Transactions</a>
+  </nav>
 
-    <main>
-        <h1>Manage Smart Cards</h1>
-        <div id="message-area" class="message-hidden"></div>
+  <div class="container">
+    <h1>Smart Cards Management</h1>
+    <p>Select an option below to perform database operations on the SmartCards table:</p>
 
-        <section class="form-section">
-            <h2 id="form-title">Issue New Smart Card</h2>
-            <form id="card-form">
-                <input type="hidden" id="card_id" name="card_id">
-                
-                <div class="form-group">
-                    <label for="passenger_id">Passenger *</label>
-                    <select id="passenger_id" name="passenger_id" required>
-                        <option value="">Select a passenger...</option>
-                    </select>
-                </div>
+    <div class="card-grid">
+      <a href="card_show.html" class="menu-card">
+        <h3>Show Smart Cards</h3>
+        <p>View all smart cards with multi-column search and sorting</p>
+      </a>
 
-                <div class="form-group">
-                    <label for="card_number">Card Number *</label>
-                    <input type="text" id="card_number" name="card_number" placeholder="METRO0001" pattern="^METRO[0-9]{4}$" required>
-                </div>
+      <a href="card_add.html" class="menu-card">
+        <h3>Issue Smart Card</h3>
+        <p>Enter manual ID and issue a new smart card to a passenger</p>
+      </a>
 
-                <div class="form-group">
-                    <label for="balance">Initial Balance *</label>
-                    <input type="number" id="balance" name="balance" min="0" step="0.01" value="0.00" required>
-                </div>
+      <a href="card_update.html" class="menu-card">
+        <h3>Update Smart Card</h3>
+        <p>Search/filter smart cards, select a tuple and edit details</p>
+      </a>
 
-                <button type="submit" id="submit-btn">Save</button>
-                <button type="button" id="cancel-btn" style="display: none;">Cancel</button>
-            </form>
-        </section>
-
-<section class="table-section">
-            <h2>Smart Card List</h2>
-            
-            <!-- Added Client-Side Search Bar -->
-            <div style="margin-bottom: 15px;">
-                <input type="text" id="search-input" placeholder="Search by card number or passenger name..." style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
-            </div>
-
-            <table id="cards-table">
-                <thead>
-                    <tr>
-                        <th>Card ID</th>
-                        <th>Card Number</th>
-                        <th>Passenger</th>
-                        <th>Balance</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="cards-body">
-                    <tr id="empty-state"><td colspan="5">No records found</td></tr>
-                </tbody>
-            </table>
-        </section>
-    </main>
-
-    <script src="../js/config.js"></script>
-    <script src="../js/common.js"></script>
-    <script src="../js/api.js"></script>
-    <script src="../js/cards.js"></script> 
+      <a href="card_delete.html" class="menu-card">
+        <h3>Delete Smart Card</h3>
+        <p>Search/filter smart cards, select a tuple and remove record</p>
+      </a>
+    </div>
+  </div>
 </body>
 </html>

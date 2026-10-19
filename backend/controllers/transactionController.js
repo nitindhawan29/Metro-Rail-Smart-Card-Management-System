@@ -257,10 +257,22 @@ const createTransaction = async (
     try {
 
         const {
+            transaction_id,
             card_id,
             station_id,
             fare_amount
         } = req.body;
+
+
+        if (transaction_id !== undefined && transaction_id !== null && transaction_id !== '') {
+            const transIdNum = Number(transaction_id);
+            if (!Number.isInteger(transIdNum) || transIdNum <= 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Transaction ID must be a positive integer'
+                });
+            }
+        }
 
 
         const validationError =
@@ -281,6 +293,21 @@ const createTransaction = async (
 
 
         await connection.beginTransaction();
+
+
+        if (transaction_id !== undefined && transaction_id !== null && transaction_id !== '') {
+            const [existingTrans] = await connection.query(
+                `SELECT transaction_id FROM Transactions WHERE transaction_id = ?`,
+                [transaction_id]
+            );
+            if (existingTrans.length > 0) {
+                await connection.rollback();
+                return res.status(409).json({
+                    success: false,
+                    message: `Transaction with ID ${transaction_id} already exists`
+                });
+            }
+        }
 
 
         // Check station
@@ -357,22 +384,45 @@ const createTransaction = async (
         }
 
 
+        const transIdNum = transaction_id !== undefined && transaction_id !== null && transaction_id !== '' ? Number(transaction_id) : null;
+        let result;
+
         // Create transaction
-        const [result] =
-            await connection.query(
-                `INSERT INTO Transactions
-                (
-                    card_id,
-                    station_id,
-                    fare_amount
-                )
-                VALUES (?, ?, ?)`,
-                [
-                    card_id,
-                    station_id,
-                    fare
-                ]
-            );
+        if (transIdNum !== null) {
+            [result] =
+                await connection.query(
+                    `INSERT INTO Transactions
+                    (
+                        transaction_id,
+                        card_id,
+                        station_id,
+                        fare_amount
+                    )
+                    VALUES (?, ?, ?, ?)`,
+                    [
+                        transIdNum,
+                        card_id,
+                        station_id,
+                        fare
+                    ]
+                );
+        } else {
+            [result] =
+                await connection.query(
+                    `INSERT INTO Transactions
+                    (
+                        card_id,
+                        station_id,
+                        fare_amount
+                    )
+                    VALUES (?, ?, ?)`,
+                    [
+                        card_id,
+                        station_id,
+                        fare
+                    ]
+                );
+        }
 
 
         // Deduct fare
@@ -396,7 +446,7 @@ const createTransaction = async (
             message:
                 'Transaction recorded and fare deducted successfully',
             transaction_id:
-                result.insertId,
+                transIdNum || result.insertId,
             remaining_balance:
                 currentBalance - fare
         });

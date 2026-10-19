@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Issue Smart Card - Metro Rail</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <nav>
+    <a href="index.html">Dashboard</a> |
+    <a href="passengers.html">Passengers</a> |
+    <a href="cards.html" class="active">Smart Cards</a> |
+    <a href="stations.html">Stations</a> |
+    <a href="transactions.html">Transactions</a>
+  </nav>
+
+  <div class="container">
+    <a href="cards.html" class="back-link">&larr; Back to Smart Cards Menu</a>
+    <h2>Issue New Smart Card</h2>
+    <div id="message-area" class="message-hidden"></div>
+
+    <div class="form-box">
+      <form id="card-add-form">
+        <div class="form-group">
+          <label for="card_id">Card ID * (User-provided Primary Key)</label>
+          <input type="number" id="card_id" name="card_id" placeholder="Enter ID (e.g. 101)" min="1" step="1" required>
+          <div class="form-hint">Enter a unique integer for this smart card.</div>
+        </div>
+
+        <div class="form-group">
+          <label for="passenger_id">Select Passenger *</label>
+          <select id="passenger_id" name="passenger_id" required>
+            <option value="">Loading passengers...</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="card_number">Card Number *</label>
+          <input type="text" id="card_number" name="card_number" placeholder="METRO1001" pattern="^METRO[0-9]{4}$" required>
+          <div class="form-hint">Format: METRO followed by 4 digits (e.g. METRO1001).</div>
+        </div>
+
+        <div class="form-group">
+          <label for="balance">Initial Balance (₹) *</label>
+          <input type="number" id="balance" name="balance" min="0" step="0.01" value="0.00" required>
+        </div>
+
+        <button type="submit" class="btn btn-success">Issue Smart Card</button>
+        <button type="reset" class="btn btn-secondary">Clear</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="../js/config.js"></script>
+  <script src="../js/common.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/cards.js"></script>
+</body>
+</html>
+

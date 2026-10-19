@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Delete Transaction - Metro Rail</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <nav>
+    <a href="index.html">Dashboard</a> |
+    <a href="passengers.html">Passengers</a> |
+    <a href="cards.html">Smart Cards</a> |
+    <a href="stations.html">Stations</a> |
+    <a href="transactions.html" class="active">Transactions</a>
+  </nav>
+
+  <div class="container">
+    <a href="transactions.html" class="back-link">&larr; Back to Transactions Menu</a>
+    <h2>Delete Transaction</h2>
+    <p>Search and locate the transaction record, then click <strong>Delete</strong>.</p>
+    <div id="message-area" class="message-hidden"></div>
+
+    <!-- Search / Filter Box -->
+    <div class="filter-box">
+      <div class="filter-title">🔍 Search & Filter Transactions</div>
+      <div class="filter-grid">
+        <div class="filter-field">
+          <label>Transaction ID:</label>
+          <div class="input-with-sort">
+            <input type="text" id="filter-id" list="dl-id" placeholder="ID...">
+            <button type="button" class="sort-btn" id="sort-id" title="Toggle Sort">⇅</button>
+          </div>
+          <datalist id="dl-id"></datalist>
+        </div>
+
+        <div class="filter-field">
+          <label>Card / Passenger:</label>
+          <div class="input-with-sort">
+            <input type="text" id="filter-card" list="dl-card" placeholder="Card or name...">
+            <button type="button" class="sort-btn" id="sort-card" title="Toggle Sort">⇅</button>
+          </div>
+          <datalist id="dl-card"></datalist>
+        </div>
+
+        <div class="filter-field">
+          <label>Station / Line:</label>
+          <div class="input-with-sort">
+            <input type="text" id="filter-station" list="dl-station" placeholder="Station...">
+            <button type="button" class="sort-btn" id="sort-station" title="Toggle Sort">⇅</button>
+          </div>
+          <datalist id="dl-station"></datalist>
+        </div>
+
+        <div class="filter-field">
+          <label>Fare Amount (₹):</label>
+          <div class="input-with-sort">
+            <input type="text" id="filter-fare" list="dl-fare" placeholder="Fare...">
+            <button type="button" class="sort-btn" id="sort-fare" title="Toggle Sort">⇅</button>
+          </div>
+          <datalist id="dl-fare"></datalist>
+        </div>
+
+        <div class="filter-field">
+          <label>Date / Time:</label>
+          <div class="input-with-sort">
+            <input type="text" id="filter-date" list="dl-date" placeholder="Date...">
+            <button type="button" class="sort-btn" id="sort-date" title="Toggle Sort">⇅</button>
+          </div>
+          <datalist id="dl-date"></datalist>
+        </div>
+      </div>
+
+      <div class="filter-actions">
+        <span id="record-count">Loading records...</span>
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-clear-filter">Reset Filters</button>
+      </div>
+    </div>
+
+    <!-- Data Table with Delete Buttons -->
+    <div class="table-container">
+      <table id="transaction-delete-table">
+        <thead>
+          <tr>
+            <th>Trans ID</th>
+            <th>Card Number</th>
+            <th>Passenger</th>
+            <th>Station</th>
+            <th>Line</th>
+            <th>Fare</th>
+            <th>Date & Time</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="transaction-delete-tbody">
+          <tr><td colspan="8">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="../js/config.js"></script>
+  <script src="../js/common.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/transactions.js"></script>
+</body>
+</html>
+

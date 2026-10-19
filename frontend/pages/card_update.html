@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Update Smart Card - Metro Rail</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <nav>
+    <a href="index.html">Dashboard</a> |
+    <a href="passengers.html">Passengers</a> |
+    <a href="cards.html" class="active">Smart Cards</a> |
+    <a href="stations.html">Stations</a> |
+    <a href="transactions.html">Transactions</a>
+  </nav>
+
+  <div class="container">
+    <a href="cards.html" class="back-link">&larr; Back to Smart Cards Menu</a>
+    <h2>Update Smart Card</h2>
+    <p>Step 1: Search and select the smart card below. Step 2: Click <strong>Update</strong> to open the edit form.</p>
+    <div id="message-area" class="message-hidden"></div>
+
+    <!-- Search / Filter Box -->
+    <div class="filter-box">
+      <div class="filter-title">🔍 Search & Filter Smart Cards</div>
+      <div class="filter-grid">
+        <div class="filter-field">
+          <label>Card ID:</label>
+          <div class="input-with-sort">
+            <input type="text" id="filter-id" list="dl-id" placeholder="ID...">
+            <button type="button" class="sort-btn" id="sort-id" title="Toggle Sort">⇅</button>
+          </div>
+          <datalist id="dl-id"></datalist>
+        </div>
+
+        <div class="filter-field">
+          <label>Card Number:</label>
+          <div class="input-with-sort">
+            <input type="text" id="filter-number" list="dl-number" placeholder="METRO...">
+            <button type="button" class="sort-btn" id="sort-number" title="Toggle Sort">⇅</button>
+          </div>
+          <datalist id="dl-number"></datalist>
+        </div>
+
+        <div class="filter-field">
+          <label>Passenger:</label>
+          <div class="input-with-sort">
+            <input type="text" id="filter-passenger" list="dl-passenger" placeholder="Passenger...">
+            <button type="button" class="sort-btn" id="sort-passenger" title="Toggle Sort">⇅</button>
+          </div>
+          <datalist id="dl-passenger"></datalist>
+        </div>
+
+        <div class="filter-field">
+          <label>Balance (₹):</label>
+          <div class="input-with-sort">
+            <input type="text" id="filter-balance" list="dl-balance" placeholder="Balance...">
+            <button type="button" class="sort-btn" id="sort-balance" title="Toggle Sort">⇅</button>
+          </div>
+          <datalist id="dl-balance"></datalist>
+        </div>
+      </div>
+
+      <div class="filter-actions">
+        <span id="record-count">Loading records...</span>
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-clear-filter">Reset Filters</button>
+      </div>
+    </div>
+
+    <!-- Data Table with Update Buttons -->
+    <div class="table-container">
+      <table id="card-update-table">
+        <thead>
+          <tr>
+            <th>Card ID</th>
+            <th>Card Number</th>
+            <th>Passenger</th>
+            <th>Current Balance</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="card-update-tbody">
+          <tr><td colspan="5">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Edit Form Panel -->
+    <div id="update-form-area" class="update-form-area" style="display: none;">
+      <h3>✏️ Edit Smart Card (ID: <span id="display-card-id"></span>)</h3>
+      <form id="card-update-form">
+        <div class="form-group">
+          <label for="edit_card_id">Card ID (Primary Key)</label>
+          <input type="number" id="edit_card_id" readonly class="input-readonly">
+          <div class="form-hint">Primary Key cannot be changed during update.</div>
+        </div>
+
+        <div class="form-group">
+          <label for="edit_passenger_id">Linked Passenger *</label>
+          <select id="edit_passenger_id" required>
+            <option value="">Select a passenger...</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="edit_card_number">Card Number *</label>
+          <input type="text" id="edit_card_number" pattern="^METRO[0-9]{4}$" required>
+        </div>
+
+        <div class="form-group">
+          <label for="edit_balance">Balance (₹) *</label>
+          <input type="number" id="edit_balance" min="0" step="0.01" required>
+        </div>
+
+        <button type="submit" class="btn btn-warning">Save Changes</button>
+        <button type="button" class="btn btn-secondary" onclick="cancelUpdate()">Cancel</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="../js/config.js"></script>
+  <script src="../js/common.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/cards.js"></script>
+</body>
+</html>
+

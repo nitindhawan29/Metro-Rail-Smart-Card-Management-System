@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Show Stations - Metro Rail</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <nav>
+    <a href="index.html">Dashboard</a> |
+    <a href="passengers.html">Passengers</a> |
+    <a href="cards.html">Smart Cards</a> |
+    <a href="stations.html" class="active">Stations</a> |
+    <a href="transactions.html">Transactions</a>
+  </nav>
+
+  <div class="container">
+    <a href="stations.html" class="back-link">&larr; Back to Stations Menu</a>
+    <h2>All Metro Stations</h2>
+    <div id="message-area" class="message-hidden"></div>
+
+    <!-- Search / Filter Box -->
+    <div class="filter-box">
+      <div class="filter-title">🔍 Search & Filter (Leave blank for no filter)</div>
+      <div class="filter-grid">
+        <div class="filter-field">
+          <label>Station ID:</label>
+          <div class="input-with-sort">
+            <input type="text" id="filter-id" list="dl-id" placeholder="ID...">
+            <button type="button" class="sort-btn" id="sort-id" title="Toggle Sort">⇅</button>
+          </div>
+          <datalist id="dl-id"></datalist>
+        </div>
+
+        <div class="filter-field">
+          <label>Station Name:</label>
+          <div class="input-with-sort">
+            <input type="text" id="filter-name" list="dl-name" placeholder="Station name...">
+            <button type="button" class="sort-btn" id="sort-name" title="Toggle Sort">⇅</button>
+          </div>
+          <datalist id="dl-name"></datalist>
+        </div>
+
+        <div class="filter-field">
+          <label>Line Name:</label>
+          <div class="input-with-sort">
+            <input type="text" id="filter-line" list="dl-line" placeholder="Line...">
+            <button type="button" class="sort-btn" id="sort-line" title="Toggle Sort">⇅</button>
+          </div>
+          <datalist id="dl-line"></datalist>
+        </div>
+      </div>
+
+      <div class="filter-actions">
+        <span id="record-count">Loading records...</span>
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-clear-filter">Reset Filters</button>
+      </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="table-container">
+      <table id="station-show-table">
+        <thead>
+          <tr>
+            <th>Station ID</th>
+            <th>Station Name</th>
+            <th>Line Name</th>
+          </tr>
+        </thead>
+        <tbody id="station-show-tbody">
+          <tr><td colspan="3">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="../js/config.js"></script>
+  <script src="../js/common.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/stations.js"></script>
+</body>
+</html>
+

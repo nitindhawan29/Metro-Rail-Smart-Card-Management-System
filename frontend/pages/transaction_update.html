@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Update Transaction - Metro Rail</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <nav>
+    <a href="index.html">Dashboard</a> |
+    <a href="passengers.html">Passengers</a> |
+    <a href="cards.html">Smart Cards</a> |
+    <a href="stations.html">Stations</a> |
+    <a href="transactions.html" class="active">Transactions</a>
+  </nav>
+
+  <div class="container">
+    <a href="transactions.html" class="back-link">&larr; Back to Transactions Menu</a>
+    <h2>Update Transaction</h2>
+    <p>Step 1: Search and select the transaction below. Step 2: Click <strong>Update</strong> to open the edit form.</p>
+    <div id="message-area" class="message-hidden"></div>
+
+    <!-- Search / Filter Box -->
+    <div class="filter-box">
+      <div class="filter-title">🔍 Search & Filter Transactions</div>
+      <div class="filter-grid">
+        <div class="filter-field">
+          <label>Transaction ID:</label>
+          <div class="input-with-sort">
+            <input type="text" id="filter-id" list="dl-id" placeholder="ID...">
+            <button type="button" class="sort-btn" id="sort-id" title="Toggle Sort">⇅</button>
+          </div>
+          <datalist id="dl-id"></datalist>
+        </div>
+
+        <div class="filter-field">
+          <label>Card / Passenger:</label>
+          <div class="input-with-sort">
+            <input type="text" id="filter-card" list="dl-card" placeholder="Card or name...">
+            <button type="button" class="sort-btn" id="sort-card" title="Toggle Sort">⇅</button>
+          </div>
+          <datalist id="dl-card"></datalist>
+        </div>
+
+        <div class="filter-field">
+          <label>Station / Line:</label>
+          <div class="input-with-sort">
+            <input type="text" id="filter-station" list="dl-station" placeholder="Station...">
+            <button type="button" class="sort-btn" id="sort-station" title="Toggle Sort">⇅</button>
+          </div>
+          <datalist id="dl-station"></datalist>
+        </div>
+
+        <div class="filter-field">
+          <label>Fare Amount (₹):</label>
+          <div class="input-with-sort">
+            <input type="text" id="filter-fare" list="dl-fare" placeholder="Fare...">
+            <button type="button" class="sort-btn" id="sort-fare" title="Toggle Sort">⇅</button>
+          </div>
+          <datalist id="dl-fare"></datalist>
+        </div>
+
+        <div class="filter-field">
+          <label>Date / Time:</label>
+          <div class="input-with-sort">
+            <input type="text" id="filter-date" list="dl-date" placeholder="Date...">
+            <button type="button" class="sort-btn" id="sort-date" title="Toggle Sort">⇅</button>
+          </div>
+          <datalist id="dl-date"></datalist>
+        </div>
+      </div>
+
+      <div class="filter-actions">
+        <span id="record-count">Loading records...</span>
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-clear-filter">Reset Filters</button>
+      </div>
+    </div>
+
+    <!-- Data Table with Update Buttons -->
+    <div class="table-container">
+      <table id="transaction-update-table">
+        <thead>
+          <tr>
+            <th>Trans ID</th>
+            <th>Card Number</th>
+            <th>Passenger</th>
+            <th>Station</th>
+            <th>Fare</th>
+            <th>Date & Time</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="transaction-update-tbody">
+          <tr><td colspan="7">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Edit Form Panel -->
+    <div id="update-form-area" class="update-form-area" style="display: none;">
+      <h3>✏️ Edit Transaction (ID: <span id="display-transaction-id"></span>)</h3>
+      <form id="transaction-update-form">
+        <div class="form-group">
+          <label for="edit_transaction_id">Transaction ID (Primary Key)</label>
+          <input type="number" id="edit_transaction_id" readonly class="input-readonly">
+          <div class="form-hint">Primary Key cannot be changed during update.</div>
+        </div>
+
+        <div class="form-group">
+          <label for="edit_card_id">Smart Card *</label>
+          <select id="edit_card_id" required>
+            <option value="">Select a card...</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="edit_station_id">Station *</label>
+          <select id="edit_station_id" required>
+            <option value="">Select a station...</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="edit_fare_amount">Fare Amount (₹) *</label>
+          <input type="number" id="edit_fare_amount" min="0" step="0.01" required>
+        </div>
+
+        <button type="submit" class="btn btn-warning">Save Changes</button>
+        <button type="button" class="btn btn-secondary" onclick="cancelUpdate()">Cancel</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="../js/config.js"></script>
+  <script src="../js/common.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/transactions.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Show Smart Cards - Metro Rail</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <nav>
+    <a href="index.html">Dashboard</a> |
+    <a href="passengers.html">Passengers</a> |
+    <a href="cards.html" class="active">Smart Cards</a> |
+    <a href="stations.html">Stations</a> |
+    <a href="transactions.html">Transactions</a>
+  </nav>
+
+  <div class="container">
+    <a href="cards.html" class="back-link">&larr; Back to Smart Cards Menu</a>
+    <h2>All Smart Cards</h2>
+    <div id="message-area" class="message-hidden"></div>
+
+    <!-- Search / Filter Box -->
+    <div class="filter-box">
+      <div class="filter-title">🔍 Search & Filter (Leave blank for no filter)</div>
+      <div class="filter-grid">
+        <div class="filter-field">
+          <label>Card ID:</label>
+          <div class="input-with-sort">
+            <input type="text" id="filter-id" list="dl-id" placeholder="ID...">
+            <button type="button" class="sort-btn" id="sort-id" title="Toggle Sort">⇅</button>
+          </div>
+          <datalist id="dl-id"></datalist>
+        </div>
+
+        <div class="filter-field">
+          <label>Card Number:</label>
+          <div class="input-with-sort">
+            <input type="text" id="filter-number" list="dl-number" placeholder="METRO...">
+            <button type="button" class="sort-btn" id="sort-number" title="Toggle Sort">⇅</button>
+          </div>
+          <datalist id="dl-number"></datalist>
+        </div>
+
+        <div class="filter-field">
+          <label>Passenger:</label>
+          <div class="input-with-sort">
+            <input type="text" id="filter-passenger" list="dl-passenger" placeholder="Passenger...">
+            <button type="button" class="sort-btn" id="sort-passenger" title="Toggle Sort">⇅</button>
+          </div>
+          <datalist id="dl-passenger"></datalist>
+        </div>
+
+        <div class="filter-field">
+          <label>Balance (₹):</label>
+          <div class="input-with-sort">
+            <input type="text" id="filter-balance" list="dl-balance" placeholder="Balance...">
+            <button type="button" class="sort-btn" id="sort-balance" title="Toggle Sort">⇅</button>
+          </div>
+          <datalist id="dl-balance"></datalist>
+        </div>
+      </div>
+
+      <div class="filter-actions">
+        <span id="record-count">Loading records...</span>
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-clear-filter">Reset Filters</button>
+      </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="table-container">
+      <table id="card-show-table">
+        <thead>
+          <tr>
+            <th>Card ID</th>
+            <th>Card Number</th>
+            <th>Passenger</th>
+            <th>Current Balance</th>
+          </tr>
+        </thead>
+        <tbody id="card-show-tbody">
+          <tr><td colspan="4">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="../js/config.js"></script>
+  <script src="../js/common.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/cards.js"></script>
+</body>
+</html>
+

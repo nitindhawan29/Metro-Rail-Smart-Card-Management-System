@@ -3,7 +3,7 @@ CREATE DATABASE metro_smart_card_db;
 USE metro_smart_card_db;
 
 CREATE TABLE Passengers (
-    passenger_id INT AUTO_INCREMENT PRIMARY KEY,
+    passenger_id INT PRIMARY KEY,
     passenger_name VARCHAR(100) NOT NULL,
 
     country_code VARCHAR(5) NOT NULL,
@@ -20,7 +20,7 @@ CREATE TABLE Passengers (
 );
 
 CREATE TABLE SmartCards (
-    card_id INT AUTO_INCREMENT PRIMARY KEY,
+    card_id INT PRIMARY KEY,
     passenger_id INT NOT NULL,
     card_number CHAR(9) NOT NULL UNIQUE,
     balance DECIMAL(10,2) DEFAULT 0.00,
@@ -33,13 +33,13 @@ CREATE TABLE SmartCards (
 );
 
 CREATE TABLE Stations (
-    station_id INT AUTO_INCREMENT PRIMARY KEY,
+    station_id INT PRIMARY KEY,
     station_name VARCHAR(100) NOT NULL,
     line_name VARCHAR(50) NOT NULL
 );
 
 CREATE TABLE Transactions (
-    transaction_id INT AUTO_INCREMENT PRIMARY KEY,
+    transaction_id INT PRIMARY KEY,
     card_id INT NOT NULL,
     station_id INT NOT NULL,
     transaction_date DATETIME DEFAULT CURRENT_TIMESTAMP,

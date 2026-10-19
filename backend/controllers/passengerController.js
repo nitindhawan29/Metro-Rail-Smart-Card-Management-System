@@ -168,11 +168,30 @@ const createPassenger = async (req, res) => {
     try {
 
         const {
+            passenger_id,
             passenger_name,
             country_code,
             mobile_number,
             email
         } = req.body;
+
+
+        if (passenger_id !== undefined && passenger_id !== null && passenger_id !== '') {
+            const passIdNum = Number(passenger_id);
+            if (!Number.isInteger(passIdNum) || passIdNum <= 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Passenger ID must be a positive integer'
+                });
+            }
+            const existingPassenger = await findPassengerById(passIdNum);
+            if (existingPassenger) {
+                return res.status(409).json({
+                    success: false,
+                    message: `Passenger with ID ${passIdNum} already exists`
+                });
+            }
+        }
 
 
         const validationError =
@@ -188,28 +207,52 @@ const createPassenger = async (req, res) => {
         }
 
 
-        const [result] = await pool.query(
-            `INSERT INTO Passengers
-            (
-                passenger_name,
-                country_code,
-                mobile_number,
-                email
-            )
-            VALUES (?, ?, ?, ?)`,
-            [
-                passenger_name,
-                country_code,
-                mobile_number,
-                email || null
-            ]
-        );
+        const passIdNum = passenger_id !== undefined && passenger_id !== null && passenger_id !== '' ? Number(passenger_id) : null;
+        let result;
+
+        if (passIdNum !== null) {
+            [result] = await pool.query(
+                `INSERT INTO Passengers
+                (
+                    passenger_id,
+                    passenger_name,
+                    country_code,
+                    mobile_number,
+                    email
+                )
+                VALUES (?, ?, ?, ?, ?)`,
+                [
+                    passIdNum,
+                    passenger_name,
+                    country_code,
+                    mobile_number,
+                    email || null
+                ]
+            );
+        } else {
+            [result] = await pool.query(
+                `INSERT INTO Passengers
+                (
+                    passenger_name,
+                    country_code,
+                    mobile_number,
+                    email
+                )
+                VALUES (?, ?, ?, ?)`,
+                [
+                    passenger_name,
+                    country_code,
+                    mobile_number,
+                    email || null
+                ]
+            );
+        }
 
 
         res.status(201).json({
             success: true,
             message: 'Passenger added successfully',
-            passenger_id: result.insertId
+            passenger_id: passIdNum || result.insertId
         });
 
 
