@@ -1,33 +1,32 @@
-async function request(path, options = {}) {
+// API Client for Metro Rail Smart Card Management System
+// Direct communication with backend Express server
 
-  const response = await fetch(
-    `${APP_CONFIG.API_BASE_URL}${path}`,
-    {
-      ...options,
-
-      headers: {
-        "Content-Type": "application/json",
-        ...(options.headers || {})
-      }
-    }
-  );
-
-
-  const body = await response.json();
-
-
-  if (!response.ok || body.success === false) {
-
-    throw new Error(
-      body.message || "Request failed"
-    );
+// Base helper function to send HTTP requests to backend
+async function request(path, options) {
+  if (!options) {
+    options = {};
   }
 
+  // Ensure headers object exists and set JSON content type
+  if (!options.headers) {
+    options.headers = {};
+  }
+  options.headers["Content-Type"] = "application/json";
+
+  const url = APP_CONFIG.API_BASE_URL + path;
+  const response = await fetch(url, options);
+  const body = await response.json();
+
+  if (!response.ok || body.success === false) {
+    const errorMsg = body.message ? body.message : "Request failed";
+    throw new Error(errorMsg);
+  }
 
   return body;
 }
 
-// Passenger Service API
+// ---------------- PASSENGERS API ----------------
+
 async function getPassengers() {
   return await request("/passengers");
 }
@@ -35,22 +34,25 @@ async function getPassengers() {
 async function createPassenger(data) {
   return await request("/passengers", {
     method: "POST",
-    body: JSON.stringify(data),
+    body: JSON.stringify(data)
   });
 }
 
 async function updatePassenger(id, data) {
-  return await request(`/passengers/${id}`, {
+  return await request("/passengers/" + id, {
     method: "PUT",
-    body: JSON.stringify(data),
+    body: JSON.stringify(data)
   });
 }
 
 async function deletePassenger(id) {
-  return await request(`/passengers/${id}`, { method: "DELETE" });
+  return await request("/passengers/" + id, {
+    method: "DELETE"
+  });
 }
 
-// Cards API
+// ---------------- SMART CARDS API ----------------
+
 async function getCards() {
   return await request("/cards");
 }
@@ -58,22 +60,25 @@ async function getCards() {
 async function createCard(data) {
   return await request("/cards", {
     method: "POST",
-    body: JSON.stringify(data),
+    body: JSON.stringify(data)
   });
 }
 
 async function updateCard(id, data) {
-  return await request(`/cards/${id}`, {
+  return await request("/cards/" + id, {
     method: "PUT",
-    body: JSON.stringify(data),
+    body: JSON.stringify(data)
   });
 }
 
 async function deleteCard(id) {
-  return await request(`/cards/${id}`, { method: "DELETE" });
+  return await request("/cards/" + id, {
+    method: "DELETE"
+  });
 }
 
-// Stations API
+// ---------------- STATIONS API ----------------
+
 async function getStations() {
   return await request("/stations");
 }
@@ -81,22 +86,25 @@ async function getStations() {
 async function createStation(data) {
   return await request("/stations", {
     method: "POST",
-    body: JSON.stringify(data),
+    body: JSON.stringify(data)
   });
 }
 
 async function updateStation(id, data) {
-  return await request(`/stations/${id}`, {
+  return await request("/stations/" + id, {
     method: "PUT",
-    body: JSON.stringify(data),
+    body: JSON.stringify(data)
   });
 }
 
 async function deleteStation(id) {
-  return await request(`/stations/${id}`, { method: "DELETE" });
+  return await request("/stations/" + id, {
+    method: "DELETE"
+  });
 }
 
-// Transactions API
+// ---------------- TRANSACTIONS API ----------------
+
 async function getTransactions() {
   return await request("/transactions");
 }
@@ -104,17 +112,19 @@ async function getTransactions() {
 async function createTransaction(data) {
   return await request("/transactions", {
     method: "POST",
-    body: JSON.stringify(data),
+    body: JSON.stringify(data)
   });
 }
 
 async function updateTransaction(id, data) {
-  return await request(`/transactions/${id}`, {
+  return await request("/transactions/" + id, {
     method: "PUT",
-    body: JSON.stringify(data),
+    body: JSON.stringify(data)
   });
 }
 
 async function deleteTransaction(id) {
-  return await request(`/transactions/${id}`, { method: "DELETE" });
+  return await request("/transactions/" + id, {
+    method: "DELETE"
+  });
 }

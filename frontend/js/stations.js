@@ -1,10 +1,11 @@
-// Simple and readable JavaScript for Stations operations
+// JavaScript for Stations operations
+// Clean and straightforward syntax for DBMS Lab Project
 
 let allStations = [];
 let sortCol = "station_id";
 let sortDir = "asc";
 
-document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener("DOMContentLoaded", async function () {
   // Page 1: Show Stations
   if (document.getElementById("station-show-table")) {
     await initStationsPage("show");
@@ -30,7 +31,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 async function initStationsPage(mode) {
   try {
     const res = await getStations();
-    allStations = res.data || [];
+    allStations = res.data ? res.data : [];
 
     fillDatalists();
     setupFilterEvents(mode);
@@ -41,33 +42,51 @@ async function initStationsPage(mode) {
 }
 
 function fillDatalists() {
-  populateDatalist("dl-id", allStations.map((s) => s.station_id));
-  populateDatalist("dl-name", allStations.map((s) => s.station_name));
-  populateDatalist("dl-line", allStations.map((s) => s.line_name));
+  const ids = [];
+  const names = [];
+  const lines = [];
+
+  for (let i = 0; i < allStations.length; i++) {
+    const s = allStations[i];
+    ids.push(s.station_id);
+    names.push(s.station_name);
+    lines.push(s.line_name);
+  }
+
+  populateDatalist("dl-id", ids);
+  populateDatalist("dl-name", names);
+  populateDatalist("dl-line", lines);
 }
 
 function setupFilterEvents(mode) {
   const fields = ["id", "name", "line"];
 
-  fields.forEach((f) => {
-    const input = document.getElementById(`filter-${f}`);
+  for (let i = 0; i < fields.length; i++) {
+    const f = fields[i];
+
+    // Input typing listener
+    const input = document.getElementById("filter-" + f);
     if (input) {
-      input.addEventListener("input", () => renderStationsTable(mode));
+      input.addEventListener("input", function () {
+        renderStationsTable(mode);
+      });
     }
 
-    const sortBtn = document.getElementById(`sort-${f}`);
+    // Sort toggle button listener
+    const sortBtn = document.getElementById("sort-" + f);
     if (sortBtn) {
-      sortBtn.addEventListener("click", () => {
+      sortBtn.addEventListener("click", function () {
         const colMap = {
           id: "station_id",
           name: "station_name",
-          line: "line_name",
+          line: "line_name"
         };
         const col = colMap[f];
 
         if (sortCol === col) {
-          if (sortDir === "asc") sortDir = "desc";
-          else if (sortDir === "desc") {
+          if (sortDir === "asc") {
+            sortDir = "desc";
+          } else if (sortDir === "desc") {
             sortCol = null;
             sortDir = null;
           } else {
@@ -82,15 +101,18 @@ function setupFilterEvents(mode) {
         renderStationsTable(mode);
       });
     }
-  });
+  }
 
+  // Clear filters button
   const clearBtn = document.getElementById("btn-clear-filter");
   if (clearBtn) {
-    clearBtn.addEventListener("click", () => {
-      fields.forEach((f) => {
-        const inp = document.getElementById(`filter-${f}`);
-        if (inp) inp.value = "";
-      });
+    clearBtn.addEventListener("click", function () {
+      for (let j = 0; j < fields.length; j++) {
+        const inp = document.getElementById("filter-" + fields[j]);
+        if (inp) {
+          inp.value = "";
+        }
+      }
       sortCol = "station_id";
       sortDir = "asc";
       updateSortButtons();
@@ -103,12 +125,14 @@ function updateSortButtons() {
   const fields = [
     { id: "sort-id", col: "station_id" },
     { id: "sort-name", col: "station_name" },
-    { id: "sort-line", col: "line_name" },
+    { id: "sort-line", col: "line_name" }
   ];
 
-  fields.forEach((f) => {
+  for (let i = 0; i < fields.length; i++) {
+    const f = fields[i];
     const btn = document.getElementById(f.id);
-    if (!btn) return;
+    if (!btn) continue;
+
     btn.classList.remove("active-sort");
 
     if (sortCol === f.col && sortDir) {
@@ -117,98 +141,117 @@ function updateSortButtons() {
     } else {
       btn.textContent = "⇅";
     }
-  });
+  }
 }
 
 function renderStationsTable(mode) {
-  const idFilter = document.getElementById("filter-id")?.value.trim().toLowerCase() || "";
-  const nameFilter = document.getElementById("filter-name")?.value.trim().toLowerCase() || "";
-  const lineFilter = document.getElementById("filter-line")?.value.trim().toLowerCase() || "";
+  const idFilter = getInputValue("filter-id").toLowerCase();
+  const nameFilter = getInputValue("filter-name").toLowerCase();
+  const lineFilter = getInputValue("filter-line").toLowerCase();
 
-  let filtered = allStations.filter((s) => {
+  // 1. Filter stations
+  const filtered = [];
+  for (let i = 0; i < allStations.length; i++) {
+    const s = allStations[i];
     const sId = String(s.station_id).toLowerCase();
     const sName = String(s.station_name).toLowerCase();
     const sLine = String(s.line_name).toLowerCase();
 
-    if (idFilter && !sId.includes(idFilter)) return false;
-    if (nameFilter && !sName.includes(nameFilter)) return false;
-    if (lineFilter && !sLine.includes(lineFilter)) return false;
-    return true;
-  });
+    if (idFilter && sId.indexOf(idFilter) === -1) continue;
+    if (nameFilter && sName.indexOf(nameFilter) === -1) continue;
+    if (lineFilter && sLine.indexOf(lineFilter) === -1) continue;
 
+    filtered.push(s);
+  }
+
+  // 2. Sort stations
   if (sortCol && sortDir) {
-    filtered.sort((a, b) => {
+    filtered.sort(function (a, b) {
       let va = a[sortCol];
       let vb = b[sortCol];
       if (va === null || va === undefined) va = "";
       if (vb === null || vb === undefined) vb = "";
 
-      const na = Number(va), nb = Number(vb);
+      const na = Number(va);
+      const nb = Number(vb);
       if (!isNaN(na) && !isNaN(nb) && String(va).trim() !== "" && String(vb).trim() !== "") {
-        return sortDir === "asc" ? na - nb : nb - na;
+        if (sortDir === "asc") {
+          return na - nb;
+        } else {
+          return nb - na;
+        }
       }
-      return sortDir === "asc" ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+
+      const sa = String(va).toLowerCase();
+      const sb = String(vb).toLowerCase();
+      if (sortDir === "asc") {
+        return sa.localeCompare(sb);
+      } else {
+        return sb.localeCompare(sa);
+      }
     });
   }
 
   const countEl = document.getElementById("record-count");
   if (countEl) {
-    countEl.textContent = `Showing ${filtered.length} of ${allStations.length} stations`;
+    countEl.textContent = "Showing " + filtered.length + " of " + allStations.length + " stations";
   }
 
-  const tbody = document.getElementById(`station-${mode}-tbody`);
+  const tbody = document.getElementById("station-" + mode + "-tbody");
   if (!tbody) return;
   tbody.innerHTML = "";
 
   if (filtered.length === 0) {
     const cols = mode === "show" ? 3 : 4;
-    tbody.innerHTML = `<tr><td colspan="${cols}" style="text-align:center; color:#888;">No matching stations found</td></tr>`;
+    tbody.innerHTML = '<tr><td colspan="' + cols + '" style="text-align:center; color:#888;">No matching stations found</td></tr>';
     return;
   }
 
-  filtered.forEach((s) => {
+  for (let j = 0; j < filtered.length; j++) {
+    const s = filtered[j];
     const tr = document.createElement("tr");
-    tr.id = `row-${s.station_id}`;
+    tr.id = "row-" + s.station_id;
 
     let actionTd = "";
     if (mode === "update") {
-      actionTd = `<td><button type="button" class="btn btn-warning btn-sm" onclick="selectStationForUpdate(${s.station_id})">✏️ Update</button></td>`;
+      actionTd = '<td><button type="button" class="btn btn-warning btn-sm" onclick="selectStationForUpdate(' + s.station_id + ')">✏️ Update</button></td>';
     } else if (mode === "delete") {
-      actionTd = `<td><button type="button" class="btn btn-danger btn-sm" onclick="selectStationForDelete(${s.station_id}, '${escapeHTML(s.station_name)}')">🗑️ Delete</button></td>`;
+      actionTd = '<td><button type="button" class="btn btn-danger btn-sm" onclick="selectStationForDelete(' + s.station_id + ", '" + escapeHTML(s.station_name) + "')\">🗑️ Delete</button></td>";
     }
 
-    tr.innerHTML = `
-      <td><strong>${escapeHTML(s.station_id)}</strong></td>
-      <td>${escapeHTML(s.station_name)}</td>
-      <td>${escapeHTML(s.line_name)}</td>
-      ${actionTd}
-    `;
+    tr.innerHTML =
+      "<td><strong>" + escapeHTML(s.station_id) + "</strong></td>" +
+      "<td>" + escapeHTML(s.station_name) + "</td>" +
+      "<td>" + escapeHTML(s.line_name) + "</td>" +
+      actionTd;
+
     tbody.appendChild(tr);
-  });
+  }
 }
 
 // ----------------- ADD STATION -----------------
 async function handleAddStation(e) {
   e.preventDefault();
 
-  const idVal = document.getElementById("station_id").value.trim();
-  const nameVal = document.getElementById("station_name").value.trim();
-  const lineVal = document.getElementById("line_name").value.trim();
+  const idVal = getInputValue("station_id");
+  const nameVal = getInputValue("station_name");
+  const lineVal = getInputValue("line_name");
 
   const idNum = parseInt(idVal, 10);
   if (isNaN(idNum) || idNum <= 0) {
-    return showMessage("Station ID must be a positive integer.", true);
+    showMessage("Station ID must be a positive integer.", true);
+    return;
   }
 
   const payload = {
     station_id: idNum,
     station_name: nameVal,
-    line_name: lineVal,
+    line_name: lineVal
   };
 
   try {
     const res = await createStation(payload);
-    showMessage(res.message || "Station added successfully!");
+    showMessage(res.message ? res.message : "Station added successfully!");
     document.getElementById("station-add-form").reset();
   } catch (err) {
     showMessage(err.message, true);
@@ -217,12 +260,23 @@ async function handleAddStation(e) {
 
 // ----------------- UPDATE STATION -----------------
 window.selectStationForUpdate = function (id) {
-  const s = allStations.find((x) => x.station_id == id);
+  let s = null;
+  for (let i = 0; i < allStations.length; i++) {
+    if (allStations[i].station_id == id) {
+      s = allStations[i];
+      break;
+    }
+  }
   if (!s) return;
 
-  document.querySelectorAll("#station-update-tbody tr").forEach((r) => r.classList.remove("selected-row"));
-  const row = document.getElementById(`row-${id}`);
-  if (row) row.classList.add("selected-row");
+  const allRows = document.querySelectorAll("#station-update-tbody tr");
+  for (let j = 0; j < allRows.length; j++) {
+    allRows[j].classList.remove("selected-row");
+  }
+  const row = document.getElementById("row-" + id);
+  if (row) {
+    row.classList.add("selected-row");
+  }
 
   document.getElementById("edit_station_id").value = s.station_id;
   document.getElementById("display-station-id").textContent = s.station_id;
@@ -236,8 +290,13 @@ window.selectStationForUpdate = function (id) {
 
 window.cancelUpdate = function () {
   const area = document.getElementById("update-form-area");
-  if (area) area.style.display = "none";
-  document.querySelectorAll("#station-update-tbody tr").forEach((r) => r.classList.remove("selected-row"));
+  if (area) {
+    area.style.display = "none";
+  }
+  const allRows = document.querySelectorAll("#station-update-tbody tr");
+  for (let i = 0; i < allRows.length; i++) {
+    allRows[i].classList.remove("selected-row");
+  }
 };
 
 async function handleUpdateStation(e) {
@@ -245,17 +304,17 @@ async function handleUpdateStation(e) {
 
   const id = document.getElementById("edit_station_id").value;
   const payload = {
-    station_name: document.getElementById("edit_station_name").value.trim(),
-    line_name: document.getElementById("edit_line_name").value.trim(),
+    station_name: getInputValue("edit_station_name"),
+    line_name: getInputValue("edit_line_name")
   };
 
   try {
     const res = await updateStation(id, payload);
-    showMessage(res.message || "Station updated successfully!");
+    showMessage(res.message ? res.message : "Station updated successfully!");
     cancelUpdate();
 
     const r = await getStations();
-    allStations = r.data || [];
+    allStations = r.data ? r.data : [];
     fillDatalists();
     renderStationsTable("update");
   } catch (err) {
@@ -265,16 +324,17 @@ async function handleUpdateStation(e) {
 
 // ----------------- DELETE STATION -----------------
 window.selectStationForDelete = async function (id, name) {
-  if (!confirm(`Are you sure you want to delete Station #${id} (${name})?`)) {
+  const confirmed = confirm("Are you sure you want to delete Station #" + id + " (" + name + ")?");
+  if (!confirmed) {
     return;
   }
 
   try {
     const res = await deleteStation(id);
-    showMessage(res.message || "Station deleted successfully!");
+    showMessage(res.message ? res.message : "Station deleted successfully!");
 
     const r = await getStations();
-    allStations = r.data || [];
+    allStations = r.data ? r.data : [];
     fillDatalists();
     renderStationsTable("delete");
   } catch (err) {
