@@ -71,23 +71,40 @@ const getAllStations = async (req, res) => {
 
     try {
 
-        const [rows] = await pool.query(
-            `SELECT *
-             FROM Stations
-             ORDER BY station_id ASC`
-        );
+        let sql = `SELECT * FROM Stations WHERE 1=1`;
+        const params = [];
 
+        // Dynamic SQL WHERE clause based on search parameters
+        if (req.query.station_id) {
+            sql += ` AND station_id = ?`;
+            params.push(req.query.station_id);
+        }
+        if (req.query.station_name) {
+            sql += ` AND station_name LIKE ?`;
+            params.push('%' + req.query.station_name + '%');
+        }
+        if (req.query.line_name) {
+            sql += ` AND line_name LIKE ?`;
+            params.push('%' + req.query.line_name + '%');
+        }
+
+        // Apply SQL ORDER BY
+        const allowedSortCols = ['station_id', 'station_name', 'line_name'];
+        const sortCol = allowedSortCols.indexOf(req.query.sort_col) !== -1 ? req.query.sort_col : 'station_id';
+        const sortDir = (req.query.sort_dir && req.query.sort_dir.toLowerCase() === 'desc') ? 'DESC' : 'ASC';
+
+        sql += ` ORDER BY ${sortCol} ${sortDir}`;
+
+        const [rows] = await pool.query(sql, params);
 
         res.status(200).json({
             success: true,
             data: rows
         });
 
-
     } catch (error) {
 
         console.error(error);
-
 
         res.status(500).json({
             success: false,

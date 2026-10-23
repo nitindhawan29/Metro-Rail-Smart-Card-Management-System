@@ -121,8 +121,7 @@ const getAllCards = async (req, res) => {
 
     try {
 
-        const [rows] = await pool.query(
-            `SELECT
+        let sql = `SELECT
                 sc.card_id,
                 sc.passenger_id,
                 p.passenger_name,
@@ -131,20 +130,49 @@ const getAllCards = async (req, res) => {
              FROM SmartCards sc
              JOIN Passengers p
                 ON sc.passenger_id = p.passenger_id
-             ORDER BY sc.card_id ASC`
-        );
+             WHERE 1=1`;
+        const params = [];
 
+        // Dynamic SQL WHERE clause based on search parameters
+        if (req.query.card_id) {
+            sql += ` AND sc.card_id = ?`;
+            params.push(req.query.card_id);
+        }
+        if (req.query.card_number) {
+            sql += ` AND sc.card_number LIKE ?`;
+            params.push('%' + req.query.card_number + '%');
+        }
+        if (req.query.passenger_name) {
+            sql += ` AND p.passenger_name LIKE ?`;
+            params.push('%' + req.query.passenger_name + '%');
+        }
+        if (req.query.balance) {
+            sql += ` AND sc.balance LIKE ?`;
+            params.push('%' + req.query.balance + '%');
+        }
+
+        // Apply SQL ORDER BY
+        const allowedSortCols = {
+            card_id: 'sc.card_id',
+            card_number: 'sc.card_number',
+            passenger_name: 'p.passenger_name',
+            balance: 'sc.balance'
+        };
+        const sortCol = allowedSortCols[req.query.sort_col] || 'sc.card_id';
+        const sortDir = (req.query.sort_dir && req.query.sort_dir.toLowerCase() === 'desc') ? 'DESC' : 'ASC';
+
+        sql += ` ORDER BY ${sortCol} ${sortDir}`;
+
+        const [rows] = await pool.query(sql, params);
 
         res.status(200).json({
             success: true,
             data: rows
         });
 
-
     } catch (error) {
 
         console.error(error);
-
 
         res.status(500).json({
             success: false,

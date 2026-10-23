@@ -88,23 +88,48 @@ const getAllPassengers = async (req, res) => {
 
     try {
 
-        const [rows] = await pool.query(
-            `SELECT *
-             FROM Passengers
-             ORDER BY passenger_id ASC`
-        );
+        let sql = `SELECT * FROM Passengers WHERE 1=1`;
+        const params = [];
 
+        // Dynamic SQL WHERE clause based on search parameters
+        if (req.query.passenger_id) {
+            sql += ` AND passenger_id = ?`;
+            params.push(req.query.passenger_id);
+        }
+        if (req.query.passenger_name) {
+            sql += ` AND passenger_name LIKE ?`;
+            params.push('%' + req.query.passenger_name + '%');
+        }
+        if (req.query.country_code) {
+            sql += ` AND country_code LIKE ?`;
+            params.push('%' + req.query.country_code + '%');
+        }
+        if (req.query.mobile_number) {
+            sql += ` AND mobile_number LIKE ?`;
+            params.push('%' + req.query.mobile_number + '%');
+        }
+        if (req.query.email) {
+            sql += ` AND email LIKE ?`;
+            params.push('%' + req.query.email + '%');
+        }
+
+        // Apply SQL ORDER BY
+        const allowedSortCols = ['passenger_id', 'passenger_name', 'country_code', 'mobile_number', 'email'];
+        const sortCol = allowedSortCols.indexOf(req.query.sort_col) !== -1 ? req.query.sort_col : 'passenger_id';
+        const sortDir = (req.query.sort_dir && req.query.sort_dir.toLowerCase() === 'desc') ? 'DESC' : 'ASC';
+
+        sql += ` ORDER BY ${sortCol} ${sortDir}`;
+
+        const [rows] = await pool.query(sql, params);
 
         res.status(200).json({
             success: true,
             data: rows
         });
 
-
     } catch (error) {
 
         console.error(error);
-
 
         res.status(500).json({
             success: false,

@@ -139,53 +139,78 @@ const getAllTransactions = async (req, res) => {
 
     try {
 
-        const [rows] = await pool.query(
-            `SELECT
+        let sql = `SELECT
                 t.transaction_id,
-
                 t.card_id,
                 sc.card_number,
-
                 p.passenger_id,
                 p.passenger_name,
-
                 t.station_id,
                 s.station_name,
                 s.line_name,
-
                 t.transaction_date,
                 t.fare_amount
-
              FROM Transactions t
-
              JOIN SmartCards sc
                 ON t.card_id = sc.card_id
-
              JOIN Passengers p
                 ON sc.passenger_id = p.passenger_id
-
              JOIN Stations s
                 ON t.station_id = s.station_id
+             WHERE 1=1`;
+        const params = [];
 
-             ORDER BY t.transaction_id ASC`
-        );
+        // Dynamic SQL WHERE clause based on search parameters
+        if (req.query.transaction_id) {
+            sql += ` AND t.transaction_id = ?`;
+            params.push(req.query.transaction_id);
+        }
+        if (req.query.card_number) {
+            sql += ` AND (sc.card_number LIKE ? OR p.passenger_name LIKE ?)`;
+            params.push('%' + req.query.card_number + '%');
+            params.push('%' + req.query.card_number + '%');
+        }
+        if (req.query.station_name) {
+            sql += ` AND (s.station_name LIKE ? OR s.line_name LIKE ?)`;
+            params.push('%' + req.query.station_name + '%');
+            params.push('%' + req.query.station_name + '%');
+        }
+        if (req.query.fare_amount) {
+            sql += ` AND t.fare_amount LIKE ?`;
+            params.push('%' + req.query.fare_amount + '%');
+        }
+        if (req.query.transaction_date) {
+            sql += ` AND t.transaction_date LIKE ?`;
+            params.push('%' + req.query.transaction_date + '%');
+        }
 
+        // Apply SQL ORDER BY
+        const allowedSortCols = {
+            transaction_id: 't.transaction_id',
+            card_number: 'sc.card_number',
+            station_name: 's.station_name',
+            fare_amount: 't.fare_amount',
+            transaction_date: 't.transaction_date'
+        };
+        const sortCol = allowedSortCols[req.query.sort_col] || 't.transaction_id';
+        const sortDir = (req.query.sort_dir && req.query.sort_dir.toLowerCase() === 'desc') ? 'DESC' : 'ASC';
+
+        sql += ` ORDER BY ${sortCol} ${sortDir}`;
+
+        const [rows] = await pool.query(sql, params);
 
         res.status(200).json({
             success: true,
             data: rows
         });
 
-
     } catch (error) {
 
         console.error(error);
 
-
         res.status(500).json({
             success: false,
-            message:
-                'Unable to fetch transactions'
+            message: 'Unable to fetch transactions'
         });
     }
 };
