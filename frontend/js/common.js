@@ -1,29 +1,22 @@
-// Simple shared helper functions for the Metro Rail project
+// Shared helper functions for Metro Rail Management System
 
 // Display banner notification at the top of the page
-function showMessage(message, isError) {
+function showMessage(message, isError = false) {
   const msgArea = document.getElementById("message-area");
   if (!msgArea) return;
 
   msgArea.textContent = message;
-  if (isError) {
-    msgArea.className = "message-error";
-  } else {
-    msgArea.className = "message-success";
-  }
+  msgArea.className = isError ? "message-error" : "message-success";
   msgArea.style.display = "block";
 
-  // Hide after 5 seconds
-  setTimeout(function () {
+  setTimeout(() => {
     msgArea.style.display = "none";
   }, 5000);
 }
 
 // Safely escape HTML to prevent XSS
 function escapeHTML(str) {
-  if (str === null || str === undefined) {
-    return "";
-  }
+  if (str === null || str === undefined) return "";
   const div = document.createElement("div");
   div.textContent = str;
   return div.innerHTML;
@@ -32,114 +25,38 @@ function escapeHTML(str) {
 // Format numbers into Indian Rupee currency format (e.g. ₹ 25.00)
 function formatCurrency(amount) {
   const num = Number(amount);
-  if (isNaN(num)) {
-    return "₹ 0.00";
-  }
-  return "₹ " + num.toFixed(2);
+  return isNaN(num) ? "₹ 0.00" : `₹ ${num.toFixed(2)}`;
 }
 
-// Helper to get text input value safely without optional chaining (?.)
-function getInputValue(elementId) {
-  const element = document.getElementById(elementId);
-  if (element && element.value !== undefined) {
-    return element.value.trim();
-  }
-  return "";
+// Helper to get text input value safely
+function getInputValue(id) {
+  const el = document.getElementById(id);
+  return el ? el.value.trim() : "";
 }
 
-// Populate <datalist> with sorted unique values for search suggestions
+// Populate <datalist> with unique sorted options using built-in Set and sort
 function populateDatalist(datalistId, items) {
   const dl = document.getElementById(datalistId);
   if (!dl) return;
 
   dl.innerHTML = "";
 
-  // 1. Collect unique, non-empty values using standard array loop
-  const unique = [];
-  for (let i = 0; i < items.length; i++) {
-    const item = items[i];
-    if (item !== null && item !== undefined) {
-      const str = String(item).trim();
-      if (str !== "" && unique.indexOf(str) === -1) {
-        unique.push(str);
-      }
-    }
-  }
+  // Filter valid non-empty items and deduplicate using Set
+  const cleanItems = items
+    .filter(item => item !== null && item !== undefined && String(item).trim() !== "")
+    .map(item => String(item).trim());
+  const uniqueItems = [...new Set(cleanItems)];
 
-  // 2. Sort the values (numerically if numbers, otherwise alphabetically)
-  unique.sort(function (a, b) {
+  // Sort numerically if numbers, otherwise alphabetically
+  uniqueItems.sort((a, b) => {
     const na = Number(a);
     const nb = Number(b);
-    if (!isNaN(na) && !isNaN(nb)) {
-      return na - nb;
-    }
-    return a.localeCompare(b);
+    return (!isNaN(na) && !isNaN(nb)) ? na - nb : a.localeCompare(b);
   });
 
-  // 3. Create <option> tags and append to datalist
-  for (let j = 0; j < unique.length; j++) {
+  uniqueItems.forEach(val => {
     const opt = document.createElement("option");
-    opt.value = unique[j];
+    opt.value = val;
     dl.appendChild(opt);
-  }
-}
-
-// Filter and sort records using simple standard loops
-function filterAndSort(records, filters, sortCol, sortDir) {
-  const result = [];
-
-  // 1. Filter records matching all active search terms
-  for (let i = 0; i < records.length; i++) {
-    const item = records[i];
-    let matches = true;
-
-    for (const key in filters) {
-      const searchVal = filters[key];
-      if (searchVal && searchVal.trim() !== "") {
-        const term = searchVal.trim().toLowerCase();
-        let val = "";
-        if (item[key] !== null && item[key] !== undefined) {
-          val = String(item[key]).toLowerCase();
-        }
-        if (val.indexOf(term) === -1) {
-          matches = false;
-          break;
-        }
-      }
-    }
-
-    if (matches) {
-      result.push(item);
-    }
-  }
-
-  // 2. Sort the filtered records
-  if (sortCol && sortDir) {
-    result.sort(function (a, b) {
-      let va = a[sortCol];
-      let vb = b[sortCol];
-      if (va === null || va === undefined) va = "";
-      if (vb === null || vb === undefined) vb = "";
-
-      const na = Number(va);
-      const nb = Number(vb);
-      if (!isNaN(na) && !isNaN(nb) && String(va).trim() !== "" && String(vb).trim() !== "") {
-        if (sortDir === "asc") {
-          return na - nb;
-        } else {
-          return nb - na;
-        }
-      }
-
-      const sa = String(va).toLowerCase();
-      const sb = String(vb).toLowerCase();
-      if (sortDir === "asc") {
-        return sa.localeCompare(sb);
-      } else {
-        return sb.localeCompare(sa);
-      }
-    });
-  }
-
-  return result;
+  });
 }
