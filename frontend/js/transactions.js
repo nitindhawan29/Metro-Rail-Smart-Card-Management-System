@@ -1,5 +1,5 @@
 // JavaScript for Transactions operations
-// Clean and straightforward syntax for DBMS Lab Project
+// Search and sort are executed directly via SQL queries on the backend
 
 let allTransactions = [];
 let allCards = [];
@@ -76,7 +76,7 @@ async function loadCardsAndStationsDropdowns(cardSelectId, stationSelectId) {
   }
 }
 
-// Fetch all transactions, cards, and stations for show/update/delete pages
+// Fetch all transactions to initialize datalists and render table via SQL
 async function initTransactionsPage(mode) {
   try {
     const tRes = await getTransactions();
@@ -105,7 +105,7 @@ async function initTransactionsPage(mode) {
 
     fillDatalists();
     setupFilterEvents(mode);
-    renderTransactionsTable(mode);
+    await renderTransactionsTable(mode);
   } catch (err) {
     showMessage(err.message, true);
   }
@@ -193,7 +193,7 @@ function setupFilterEvents(mode) {
   for (let i = 0; i < fields.length; i++) {
     const f = fields[i];
 
-    // Input typing listener
+    // Input typing listener - triggers SQL query
     const input = document.getElementById("filter-" + f);
     if (input) {
       input.addEventListener("input", function () {
@@ -201,7 +201,7 @@ function setupFilterEvents(mode) {
       });
     }
 
-    // Sort toggle button listener
+    // Sort toggle button listener - triggers SQL query with ORDER BY
     const sortBtn = document.getElementById("sort-" + f);
     if (sortBtn) {
       sortBtn.addEventListener("click", function () {
@@ -277,72 +277,86 @@ function updateSortButtons() {
   }
 }
 
-function renderTransactionsTable(mode) {
-  const filters = {
+// Executes SQL query with WHERE conditions and ORDER BY through backend
+async function renderTransactionsTable(mode) {
+  const params = {
     transaction_id: getInputValue("filter-id"),
-    card_display: getInputValue("filter-card"),
-    station_display: getInputValue("filter-station"),
-    fare_display: getInputValue("filter-fare"),
-    date_display: getInputValue("filter-date")
+    card_number: getInputValue("filter-card"),
+    station_name: getInputValue("filter-station"),
+    fare_amount: getInputValue("filter-fare"),
+    transaction_date: getInputValue("filter-date"),
+    sort_col: sortCol,
+    sort_dir: sortDir
   };
 
-  const filtered = filterAndSort(allTransactions, filters, sortCol, sortDir);
+  try {
+    // Backend executes SELECT ... FROM Transactions JOIN SmartCards ... WHERE ... ORDER BY ...
+    const res = await getTransactions(params);
+    const rawRecords = res.data ? res.data : [];
 
-  const countEl = document.getElementById("record-count");
-  if (countEl) {
-    countEl.textContent = "Showing " + filtered.length + " of " + allTransactions.length + " transactions";
-  }
-
-  const tbody = document.getElementById("transaction-" + mode + "-tbody");
-  if (!tbody) return;
-  tbody.innerHTML = "";
-
-  const colSpanMap = { show: 7, update: 7, delete: 8 };
-  const totalCols = colSpanMap[mode] ? colSpanMap[mode] : 7;
-
-  if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="' + totalCols + '" style="text-align:center; color:#888;">No matching transactions found</td></tr>';
-    return;
-  }
-
-  for (let j = 0; j < filtered.length; j++) {
-    const t = filtered[j];
-    const tr = document.createElement("tr");
-    tr.id = "row-" + t.transaction_id;
-
-    const passName = t.passenger_name ? escapeHTML(t.passenger_name) : "N/A";
-
-    if (mode === "show") {
-      tr.innerHTML =
-        "<td><strong>" + escapeHTML(t.transaction_id) + "</strong></td>" +
-        "<td>" + escapeHTML(t.card_number) + "</td>" +
-        "<td>" + passName + "</td>" +
-        "<td>" + escapeHTML(t.station_name) + "</td>" +
-        "<td>" + escapeHTML(t.line_name) + "</td>" +
-        "<td>" + formatCurrency(t.fare_amount) + "</td>" +
-        "<td>" + escapeHTML(t.date_display) + "</td>";
-    } else if (mode === "update") {
-      tr.innerHTML =
-        "<td><strong>" + escapeHTML(t.transaction_id) + "</strong></td>" +
-        "<td>" + escapeHTML(t.card_number) + "</td>" +
-        "<td>" + passName + "</td>" +
-        "<td>" + escapeHTML(t.station_name) + "</td>" +
-        "<td>" + formatCurrency(t.fare_amount) + "</td>" +
-        "<td>" + escapeHTML(t.date_display) + "</td>" +
-        '<td><button type="button" class="btn btn-warning btn-sm" onclick="selectTransactionForUpdate(' + t.transaction_id + ')">✏️ Update</button></td>';
-    } else if (mode === "delete") {
-      tr.innerHTML =
-        "<td><strong>" + escapeHTML(t.transaction_id) + "</strong></td>" +
-        "<td>" + escapeHTML(t.card_number) + "</td>" +
-        "<td>" + passName + "</td>" +
-        "<td>" + escapeHTML(t.station_name) + "</td>" +
-        "<td>" + escapeHTML(t.line_name) + "</td>" +
-        "<td>" + formatCurrency(t.fare_amount) + "</td>" +
-        "<td>" + escapeHTML(t.date_display) + "</td>" +
-        '<td><button type="button" class="btn btn-danger btn-sm" onclick="selectTransactionForDelete(' + t.transaction_id + ", '" + escapeHTML(t.card_number) + "')\">🗑️ Delete</button></td>";
+    const records = [];
+    for (let i = 0; i < rawRecords.length; i++) {
+      records.push(prepareTransaction(rawRecords[i]));
     }
 
-    tbody.appendChild(tr);
+    const countEl = document.getElementById("record-count");
+    if (countEl) {
+      countEl.textContent = "Showing " + records.length + " of " + allTransactions.length + " transactions";
+    }
+
+    const tbody = document.getElementById("transaction-" + mode + "-tbody");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+
+    const colSpanMap = { show: 7, update: 7, delete: 8 };
+    const totalCols = colSpanMap[mode] ? colSpanMap[mode] : 7;
+
+    if (records.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="' + totalCols + '" style="text-align:center; color:#888;">No matching transactions found</td></tr>';
+      return;
+    }
+
+    for (let j = 0; j < records.length; j++) {
+      const t = records[j];
+      const tr = document.createElement("tr");
+      tr.id = "row-" + t.transaction_id;
+
+      const passName = t.passenger_name ? escapeHTML(t.passenger_name) : "N/A";
+
+      if (mode === "show") {
+        tr.innerHTML =
+          "<td><strong>" + escapeHTML(t.transaction_id) + "</strong></td>" +
+          "<td>" + escapeHTML(t.card_number) + "</td>" +
+          "<td>" + passName + "</td>" +
+          "<td>" + escapeHTML(t.station_name) + "</td>" +
+          "<td>" + escapeHTML(t.line_name) + "</td>" +
+          "<td>" + formatCurrency(t.fare_amount) + "</td>" +
+          "<td>" + escapeHTML(t.date_display) + "</td>";
+      } else if (mode === "update") {
+        tr.innerHTML =
+          "<td><strong>" + escapeHTML(t.transaction_id) + "</strong></td>" +
+          "<td>" + escapeHTML(t.card_number) + "</td>" +
+          "<td>" + passName + "</td>" +
+          "<td>" + escapeHTML(t.station_name) + "</td>" +
+          "<td>" + formatCurrency(t.fare_amount) + "</td>" +
+          "<td>" + escapeHTML(t.date_display) + "</td>" +
+          `<td><button type="button" class="btn btn-warning btn-sm" onclick="selectTransactionForUpdate(${t.transaction_id})">✏️ Update</button></td>`;
+      } else if (mode === "delete") {
+        tr.innerHTML =
+          "<td><strong>" + escapeHTML(t.transaction_id) + "</strong></td>" +
+          "<td>" + escapeHTML(t.card_number) + "</td>" +
+          "<td>" + passName + "</td>" +
+          "<td>" + escapeHTML(t.station_name) + "</td>" +
+          "<td>" + escapeHTML(t.line_name) + "</td>" +
+          "<td>" + formatCurrency(t.fare_amount) + "</td>" +
+          "<td>" + escapeHTML(t.date_display) + "</td>" +
+          `<td><button type="button" class="btn btn-danger btn-sm" onclick="selectTransactionForDelete(${t.transaction_id}, '${escapeHTML(t.card_number)}')">🗑️ Delete</button></td>`;
+      }
+
+      tbody.appendChild(tr);
+    }
+  } catch (err) {
+    showMessage(err.message, true);
   }
 }
 
@@ -378,12 +392,21 @@ async function handleAddTransaction(e) {
 }
 
 // ----------------- UPDATE TRANSACTION -----------------
-window.selectTransactionForUpdate = function (id) {
+window.selectTransactionForUpdate = async function (id) {
   let t = null;
   for (let i = 0; i < allTransactions.length; i++) {
     if (allTransactions[i].transaction_id == id) {
       t = allTransactions[i];
       break;
+    }
+  }
+
+  if (!t) {
+    try {
+      const res = await request("/transactions/" + id);
+      t = res.data;
+    } catch (err) {
+      return showMessage("Transaction details not found", true);
     }
   }
   if (!t) return;
@@ -441,7 +464,7 @@ async function handleUpdateTransaction(e) {
       allTransactions.push(prepareTransaction(rawTransactions[k]));
     }
     fillDatalists();
-    renderTransactionsTable("update");
+    await renderTransactionsTable("update");
   } catch (err) {
     showMessage(err.message, true);
   }
@@ -465,7 +488,7 @@ window.selectTransactionForDelete = async function (id, cardNum) {
       allTransactions.push(prepareTransaction(rawTransactions[k]));
     }
     fillDatalists();
-    renderTransactionsTable("delete");
+    await renderTransactionsTable("delete");
   } catch (err) {
     showMessage(err.message, true);
   }

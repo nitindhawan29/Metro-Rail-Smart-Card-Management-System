@@ -1,6 +1,22 @@
 // API Client for Metro Rail Smart Card Management System
 // Direct communication with backend Express server
 
+// Helper to convert an object into URL query string for SQL search parameters
+function buildQueryString(params) {
+  if (!params) return "";
+  const parts = [];
+  for (const key in params) {
+    const val = params[key];
+    if (val !== undefined && val !== null && String(val).trim() !== "") {
+      parts.push(encodeURIComponent(key) + "=" + encodeURIComponent(String(val).trim()));
+    }
+  }
+  if (parts.length > 0) {
+    return "?" + parts.join("&");
+  }
+  return "";
+}
+
 // Base helper function to send HTTP requests to backend
 async function request(path, options) {
   if (!options) {
@@ -27,8 +43,9 @@ async function request(path, options) {
 
 // ---------------- PASSENGERS API ----------------
 
-async function getPassengers() {
-  return await request("/passengers");
+// Passes search & sort parameters to execute SQL queries on the backend
+async function getPassengers(params) {
+  return await request("/passengers" + buildQueryString(params));
 }
 
 async function createPassenger(data) {
@@ -53,8 +70,9 @@ async function deletePassenger(id) {
 
 // ---------------- SMART CARDS API ----------------
 
-async function getCards() {
-  return await request("/cards");
+// Passes search & sort parameters to execute SQL queries on the backend
+async function getCards(params) {
+  return await request("/cards" + buildQueryString(params));
 }
 
 async function createCard(data) {
@@ -79,8 +97,9 @@ async function deleteCard(id) {
 
 // ---------------- STATIONS API ----------------
 
-async function getStations() {
-  return await request("/stations");
+// Passes search & sort parameters to execute SQL queries on the backend
+async function getStations(params) {
+  return await request("/stations" + buildQueryString(params));
 }
 
 async function createStation(data) {
@@ -105,8 +124,9 @@ async function deleteStation(id) {
 
 // ---------------- TRANSACTIONS API ----------------
 
-async function getTransactions() {
-  return await request("/transactions");
+// Passes search & sort parameters to execute SQL queries on the backend
+async function getTransactions(params) {
+  return await request("/transactions" + buildQueryString(params));
 }
 
 async function createTransaction(data) {

@@ -1,5 +1,5 @@
 // JavaScript for Smart Cards operations
-// Clean and straightforward syntax for DBMS Lab Project
+// Search and sort are executed directly via SQL queries on the backend
 
 let allCards = [];
 let allPassengers = [];
@@ -59,7 +59,7 @@ async function loadPassengersDropdown(selectId) {
   }
 }
 
-// Fetch all cards and passengers for show/update/delete pages
+// Fetch cards and passengers to initialize datalists and render table via SQL
 async function initCardsPage(mode) {
   try {
     const cRes = await getCards();
@@ -75,7 +75,7 @@ async function initCardsPage(mode) {
 
     fillDatalists();
     setupFilterEvents(mode);
-    renderCardsTable(mode);
+    await renderCardsTable(mode);
   } catch (err) {
     showMessage(err.message, true);
   }
@@ -115,7 +115,7 @@ function setupFilterEvents(mode) {
   for (let i = 0; i < fields.length; i++) {
     const f = fields[i];
 
-    // Input typing listener
+    // Input typing listener - triggers SQL query
     const input = document.getElementById("filter-" + f);
     if (input) {
       input.addEventListener("input", function () {
@@ -123,7 +123,7 @@ function setupFilterEvents(mode) {
       });
     }
 
-    // Sort toggle button listener
+    // Sort toggle button listener - triggers SQL query with ORDER BY
     const sortBtn = document.getElementById("sort-" + f);
     if (sortBtn) {
       sortBtn.addEventListener("click", function () {
@@ -197,112 +197,67 @@ function updateSortButtons() {
   }
 }
 
-function renderCardsTable(mode) {
-  const idFilter = getInputValue("filter-id").toLowerCase();
-  const numFilter = getInputValue("filter-number").toLowerCase();
-  const passFilter = getInputValue("filter-passenger").toLowerCase();
-  const balFilter = getInputValue("filter-balance").toLowerCase();
+// Executes SQL query with WHERE conditions and ORDER BY through backend
+async function renderCardsTable(mode) {
+  const params = {
+    card_id: getInputValue("filter-id"),
+    card_number: getInputValue("filter-number"),
+    passenger_name: getInputValue("filter-passenger"),
+    balance: getInputValue("filter-balance"),
+    sort_col: sortCol,
+    sort_dir: sortDir
+  };
 
-  // 1. Filter cards
-  const filtered = [];
-  for (let i = 0; i < allCards.length; i++) {
-    const c = allCards[i];
+  try {
+    // Backend executes SELECT ... FROM SmartCards JOIN Passengers ... WHERE ... ORDER BY ...
+    const res = await getCards(params);
+    const records = res.data ? res.data : [];
 
-    let pName = "Passenger #" + c.passenger_id;
-    if (passengerMap[c.passenger_id]) {
-      pName = passengerMap[c.passenger_id];
-    } else if (c.passenger_name) {
-      pName = c.passenger_name;
+    const countEl = document.getElementById("record-count");
+    if (countEl) {
+      countEl.textContent = "Showing " + records.length + " of " + allCards.length + " smart cards";
     }
 
-    const cId = String(c.card_id).toLowerCase();
-    const cNum = String(c.card_number).toLowerCase();
-    const cPass = pName.toLowerCase();
-    const cBal = String(c.balance).toLowerCase();
+    const tbody = document.getElementById("card-" + mode + "-tbody");
+    if (!tbody) return;
+    tbody.innerHTML = "";
 
-    if (idFilter && cId.indexOf(idFilter) === -1) continue;
-    if (numFilter && cNum.indexOf(numFilter) === -1) continue;
-    if (passFilter && cPass.indexOf(passFilter) === -1) continue;
-    if (balFilter && cBal.indexOf(balFilter) === -1) continue;
-
-    filtered.push(c);
-  }
-
-  // 2. Sort cards
-  if (sortCol && sortDir) {
-    filtered.sort(function (a, b) {
-      let va = a[sortCol];
-      let vb = b[sortCol];
-
-      if (sortCol === "passenger_name") {
-        va = passengerMap[a.passenger_id] ? passengerMap[a.passenger_id] : (a.passenger_name ? a.passenger_name : "");
-        vb = passengerMap[b.passenger_id] ? passengerMap[b.passenger_id] : (b.passenger_name ? b.passenger_name : "");
-      }
-      if (va === null || va === undefined) va = "";
-      if (vb === null || vb === undefined) vb = "";
-
-      const na = Number(va);
-      const nb = Number(vb);
-      if (!isNaN(na) && !isNaN(nb) && String(va).trim() !== "" && String(vb).trim() !== "") {
-        if (sortDir === "asc") {
-          return na - nb;
-        } else {
-          return nb - na;
-        }
-      }
-
-      const sa = String(va).toLowerCase();
-      const sb = String(vb).toLowerCase();
-      if (sortDir === "asc") {
-        return sa.localeCompare(sb);
-      } else {
-        return sb.localeCompare(sa);
-      }
-    });
-  }
-
-  const countEl = document.getElementById("record-count");
-  if (countEl) {
-    countEl.textContent = "Showing " + filtered.length + " of " + allCards.length + " smart cards";
-  }
-
-  const tbody = document.getElementById("card-" + mode + "-tbody");
-  if (!tbody) return;
-  tbody.innerHTML = "";
-
-  if (filtered.length === 0) {
-    const cols = mode === "show" ? 4 : 5;
-    tbody.innerHTML = '<tr><td colspan="' + cols + '" style="text-align:center; color:#888;">No matching smart cards found</td></tr>';
-    return;
-  }
-
-  for (let j = 0; j < filtered.length; j++) {
-    const c = filtered[j];
-    let pName = "Passenger #" + c.passenger_id;
-    if (passengerMap[c.passenger_id]) {
-      pName = passengerMap[c.passenger_id];
-    } else if (c.passenger_name) {
-      pName = c.passenger_name;
+    if (records.length === 0) {
+      const cols = mode === "show" ? 4 : 5;
+      tbody.innerHTML = '<tr><td colspan="' + cols + '" style="text-align:center; color:#888;">No matching smart cards found</td></tr>';
+      return;
     }
 
-    const tr = document.createElement("tr");
-    tr.id = "row-" + c.card_id;
+    for (let j = 0; j < records.length; j++) {
+      const c = records[j];
+      let pName = "Passenger #" + c.passenger_id;
+      if (c.passenger_name) {
+        pName = c.passenger_name;
+      } else if (passengerMap[c.passenger_id]) {
+        pName = passengerMap[c.passenger_id];
+      }
 
-    let actionTd = "";
-    if (mode === "update") {
-      actionTd = '<td><button type="button" class="btn btn-warning btn-sm" onclick="selectCardForUpdate(' + c.card_id + ')">✏️ Update</button></td>';
-    } else if (mode === "delete") {
-      actionTd = '<td><button type="button" class="btn btn-danger btn-sm" onclick="selectCardForDelete(' + c.card_id + ", '" + escapeHTML(c.card_number) + "')\">🗑️ Delete</button></td>";
+      const tr = document.createElement("tr");
+      tr.id = "row-" + c.card_id;
+
+      let actionTd = "";
+      if (mode === "update") {
+        actionTd = `<td><button type="button" class="btn btn-warning btn-sm" onclick="selectCardForUpdate(${c.card_id})">✏️ Update</button></td>`;
+      } else if (mode === "delete") {
+        actionTd = `<td><button type="button" class="btn btn-danger btn-sm" onclick="selectCardForDelete(${c.card_id}, '${escapeHTML(c.card_number)}')">🗑️ Delete</button></td>`;
+      }
+
+      tr.innerHTML =
+        "<td><strong>" + escapeHTML(c.card_id) + "</strong></td>" +
+        "<td><code>" + escapeHTML(c.card_number) + "</code></td>" +
+        "<td>" + escapeHTML(pName) + "</td>" +
+        "<td>" + formatCurrency(c.balance) + "</td>" +
+        actionTd;
+
+      tbody.appendChild(tr);
     }
-
-    tr.innerHTML =
-      "<td><strong>" + escapeHTML(c.card_id) + "</strong></td>" +
-      "<td><code>" + escapeHTML(c.card_number) + "</code></td>" +
-      "<td>" + escapeHTML(pName) + "</td>" +
-      "<td>" + formatCurrency(c.balance) + "</td>" +
-      actionTd;
-
-    tbody.appendChild(tr);
+  } catch (err) {
+    showMessage(err.message, true);
   }
 }
 
@@ -351,12 +306,21 @@ async function handleAddCard(e) {
 }
 
 // ----------------- UPDATE CARD -----------------
-window.selectCardForUpdate = function (id) {
+window.selectCardForUpdate = async function (id) {
   let c = null;
   for (let i = 0; i < allCards.length; i++) {
     if (allCards[i].card_id == id) {
       c = allCards[i];
       break;
+    }
+  }
+
+  if (!c) {
+    try {
+      const res = await request("/cards/" + id);
+      c = res.data;
+    } catch (err) {
+      return showMessage("Card details not found", true);
     }
   }
   if (!c) return;
@@ -418,7 +382,7 @@ async function handleUpdateCard(e) {
     const r = await getCards();
     allCards = r.data ? r.data : [];
     fillDatalists();
-    renderCardsTable("update");
+    await renderCardsTable("update");
   } catch (err) {
     showMessage(err.message, true);
   }
@@ -438,7 +402,7 @@ window.selectCardForDelete = async function (id, number) {
     const r = await getCards();
     allCards = r.data ? r.data : [];
     fillDatalists();
-    renderCardsTable("delete");
+    await renderCardsTable("delete");
   } catch (err) {
     showMessage(err.message, true);
   }

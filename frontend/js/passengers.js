@@ -1,5 +1,5 @@
 // JavaScript for Passengers operations
-// Clean and straightforward syntax for DBMS Lab Project
+// Search and sort are executed directly via SQL queries on the backend
 
 let allPassengers = [];
 let sortCol = "passenger_id";
@@ -28,7 +28,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 });
 
-// Fetch all passengers from the backend
+// Fetch all passengers to initialize datalists and render initial table via SQL
 async function loadPassengersAndInit(mode) {
   try {
     const res = await getPassengers();
@@ -36,7 +36,7 @@ async function loadPassengersAndInit(mode) {
 
     fillDatalists();
     setupFilterEvents(mode);
-    renderPassengerTable(mode);
+    await renderPassengerTable(mode);
   } catch (err) {
     showMessage(err.message, true);
   }
@@ -75,7 +75,7 @@ function setupFilterEvents(mode) {
   for (let i = 0; i < fields.length; i++) {
     const f = fields[i];
 
-    // Input typing listener
+    // Input typing listener - triggers SQL query
     const input = document.getElementById("filter-" + f);
     if (input) {
       input.addEventListener("input", function () {
@@ -83,7 +83,7 @@ function setupFilterEvents(mode) {
       });
     }
 
-    // Sort toggle button listener
+    // Sort toggle button listener - triggers SQL query with ORDER BY
     const sortBtn = document.getElementById("sort-" + f);
     if (sortBtn) {
       sortBtn.addEventListener("click", function () {
@@ -160,56 +160,64 @@ function updateSortButtons() {
   }
 }
 
-// Filter, sort and display rows in table
-function renderPassengerTable(mode) {
-  const filters = {
+// Executes SQL query with WHERE conditions and ORDER BY through backend
+async function renderPassengerTable(mode) {
+  const params = {
     passenger_id: getInputValue("filter-id"),
     passenger_name: getInputValue("filter-name"),
     country_code: getInputValue("filter-country"),
     mobile_number: getInputValue("filter-mobile"),
-    email: getInputValue("filter-email")
+    email: getInputValue("filter-email"),
+    sort_col: sortCol,
+    sort_dir: sortDir
   };
 
-  const filtered = filterAndSort(allPassengers, filters, sortCol, sortDir);
+  try {
+    // Backend executes SELECT ... FROM Passengers WHERE ... ORDER BY ...
+    const res = await getPassengers(params);
+    const records = res.data ? res.data : [];
 
-  const countEl = document.getElementById("record-count");
-  if (countEl) {
-    countEl.textContent = "Showing " + filtered.length + " of " + allPassengers.length + " passengers";
-  }
-
-  const tbody = document.getElementById("passenger-" + mode + "-tbody");
-  if (!tbody) return;
-  tbody.innerHTML = "";
-
-  if (filtered.length === 0) {
-    const cols = mode === "show" ? 5 : 6;
-    tbody.innerHTML = '<tr><td colspan="' + cols + '" style="text-align:center; color:#888;">No matching passengers found</td></tr>';
-    return;
-  }
-
-  for (let i = 0; i < filtered.length; i++) {
-    const p = filtered[i];
-    const tr = document.createElement("tr");
-    tr.id = "row-" + p.passenger_id;
-
-    let actionTd = "";
-    if (mode === "update") {
-      actionTd = '<td><button type="button" class="btn btn-warning btn-sm" onclick="selectForUpdate(' + p.passenger_id + ')">✏️ Update</button></td>';
-    } else if (mode === "delete") {
-      actionTd = '<td><button type="button" class="btn btn-danger btn-sm" onclick="selectForDelete(' + p.passenger_id + ", '" + escapeHTML(p.passenger_name) + "')\">🗑️ Delete</button></td>";
+    const countEl = document.getElementById("record-count");
+    if (countEl) {
+      countEl.textContent = "Showing " + records.length + " of " + allPassengers.length + " passengers";
     }
 
-    const emailDisplay = p.email ? escapeHTML(p.email) : "N/A";
+    const tbody = document.getElementById("passenger-" + mode + "-tbody");
+    if (!tbody) return;
+    tbody.innerHTML = "";
 
-    tr.innerHTML =
-      "<td><strong>" + escapeHTML(p.passenger_id) + "</strong></td>" +
-      "<td>" + escapeHTML(p.passenger_name) + "</td>" +
-      "<td>" + escapeHTML(p.country_code) + "</td>" +
-      "<td>" + escapeHTML(p.mobile_number) + "</td>" +
-      "<td>" + emailDisplay + "</td>" +
-      actionTd;
+    if (records.length === 0) {
+      const cols = mode === "show" ? 5 : 6;
+      tbody.innerHTML = '<tr><td colspan="' + cols + '" style="text-align:center; color:#888;">No matching passengers found</td></tr>';
+      return;
+    }
 
-    tbody.appendChild(tr);
+    for (let i = 0; i < records.length; i++) {
+      const p = records[i];
+      const tr = document.createElement("tr");
+      tr.id = "row-" + p.passenger_id;
+
+      let actionTd = "";
+      if (mode === "update") {
+        actionTd = `<td><button type="button" class="btn btn-warning btn-sm" onclick="selectForUpdate(${p.passenger_id})">✏️ Update</button></td>`;
+      } else if (mode === "delete") {
+        actionTd = `<td><button type="button" class="btn btn-danger btn-sm" onclick="selectForDelete(${p.passenger_id}, '${escapeHTML(p.passenger_name)}')">🗑️ Delete</button></td>`;
+      }
+
+      const emailDisplay = p.email ? escapeHTML(p.email) : "N/A";
+
+      tr.innerHTML =
+        "<td><strong>" + escapeHTML(p.passenger_id) + "</strong></td>" +
+        "<td>" + escapeHTML(p.passenger_name) + "</td>" +
+        "<td>" + escapeHTML(p.country_code) + "</td>" +
+        "<td>" + escapeHTML(p.mobile_number) + "</td>" +
+        "<td>" + emailDisplay + "</td>" +
+        actionTd;
+
+      tbody.appendChild(tr);
+    }
+  } catch (err) {
+    showMessage(err.message, true);
   }
 }
 
@@ -247,12 +255,22 @@ async function handleAddPassenger(e) {
 }
 
 // ----------------- UPDATE PASSENGER -----------------
-window.selectForUpdate = function (id) {
+window.selectForUpdate = async function (id) {
   let p = null;
   for (let i = 0; i < allPassengers.length; i++) {
     if (allPassengers[i].passenger_id == id) {
       p = allPassengers[i];
       break;
+    }
+  }
+
+  // If not found in cached list, fetch from database directly
+  if (!p) {
+    try {
+      const res = await request("/passengers/" + id);
+      p = res.data;
+    } catch (err) {
+      return showMessage("Passenger details not found", true);
     }
   }
   if (!p) return;
@@ -310,11 +328,11 @@ async function handleUpdatePassenger(e) {
     showMessage(res.message ? res.message : "Passenger updated successfully!");
     cancelUpdate();
 
-    // Reload records from backend
+    // Reload records from backend and re-render via SQL
     const r = await getPassengers();
     allPassengers = r.data ? r.data : [];
     fillDatalists();
-    renderPassengerTable("update");
+    await renderPassengerTable("update");
   } catch (err) {
     showMessage(err.message, true);
   }
@@ -331,11 +349,11 @@ window.selectForDelete = async function (id, name) {
     const res = await deletePassenger(id);
     showMessage(res.message ? res.message : "Passenger deleted successfully!");
 
-    // Reload records from backend
+    // Reload records from backend and re-render via SQL
     const r = await getPassengers();
     allPassengers = r.data ? r.data : [];
     fillDatalists();
-    renderPassengerTable("delete");
+    await renderPassengerTable("delete");
   } catch (err) {
     showMessage(err.message, true);
   }

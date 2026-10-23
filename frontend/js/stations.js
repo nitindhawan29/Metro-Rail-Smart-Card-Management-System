@@ -1,5 +1,5 @@
 // JavaScript for Stations operations
-// Clean and straightforward syntax for DBMS Lab Project
+// Search and sort are executed directly via SQL queries on the backend
 
 let allStations = [];
 let sortCol = "station_id";
@@ -35,7 +35,7 @@ async function initStationsPage(mode) {
 
     fillDatalists();
     setupFilterEvents(mode);
-    renderStationsTable(mode);
+    await renderStationsTable(mode);
   } catch (err) {
     showMessage(err.message, true);
   }
@@ -64,7 +64,7 @@ function setupFilterEvents(mode) {
   for (let i = 0; i < fields.length; i++) {
     const f = fields[i];
 
-    // Input typing listener
+    // Input typing listener - triggers SQL query
     const input = document.getElementById("filter-" + f);
     if (input) {
       input.addEventListener("input", function () {
@@ -72,7 +72,7 @@ function setupFilterEvents(mode) {
       });
     }
 
-    // Sort toggle button listener
+    // Sort toggle button listener - triggers SQL query with ORDER BY
     const sortBtn = document.getElementById("sort-" + f);
     if (sortBtn) {
       sortBtn.addEventListener("click", function () {
@@ -144,88 +144,58 @@ function updateSortButtons() {
   }
 }
 
-function renderStationsTable(mode) {
-  const idFilter = getInputValue("filter-id").toLowerCase();
-  const nameFilter = getInputValue("filter-name").toLowerCase();
-  const lineFilter = getInputValue("filter-line").toLowerCase();
+// Executes SQL query with WHERE conditions and ORDER BY through backend
+async function renderStationsTable(mode) {
+  const params = {
+    station_id: getInputValue("filter-id"),
+    station_name: getInputValue("filter-name"),
+    line_name: getInputValue("filter-line"),
+    sort_col: sortCol,
+    sort_dir: sortDir
+  };
 
-  // 1. Filter stations
-  const filtered = [];
-  for (let i = 0; i < allStations.length; i++) {
-    const s = allStations[i];
-    const sId = String(s.station_id).toLowerCase();
-    const sName = String(s.station_name).toLowerCase();
-    const sLine = String(s.line_name).toLowerCase();
+  try {
+    // Backend executes SELECT ... FROM Stations WHERE ... ORDER BY ...
+    const res = await getStations(params);
+    const records = res.data ? res.data : [];
 
-    if (idFilter && sId.indexOf(idFilter) === -1) continue;
-    if (nameFilter && sName.indexOf(nameFilter) === -1) continue;
-    if (lineFilter && sLine.indexOf(lineFilter) === -1) continue;
-
-    filtered.push(s);
-  }
-
-  // 2. Sort stations
-  if (sortCol && sortDir) {
-    filtered.sort(function (a, b) {
-      let va = a[sortCol];
-      let vb = b[sortCol];
-      if (va === null || va === undefined) va = "";
-      if (vb === null || vb === undefined) vb = "";
-
-      const na = Number(va);
-      const nb = Number(vb);
-      if (!isNaN(na) && !isNaN(nb) && String(va).trim() !== "" && String(vb).trim() !== "") {
-        if (sortDir === "asc") {
-          return na - nb;
-        } else {
-          return nb - na;
-        }
-      }
-
-      const sa = String(va).toLowerCase();
-      const sb = String(vb).toLowerCase();
-      if (sortDir === "asc") {
-        return sa.localeCompare(sb);
-      } else {
-        return sb.localeCompare(sa);
-      }
-    });
-  }
-
-  const countEl = document.getElementById("record-count");
-  if (countEl) {
-    countEl.textContent = "Showing " + filtered.length + " of " + allStations.length + " stations";
-  }
-
-  const tbody = document.getElementById("station-" + mode + "-tbody");
-  if (!tbody) return;
-  tbody.innerHTML = "";
-
-  if (filtered.length === 0) {
-    const cols = mode === "show" ? 3 : 4;
-    tbody.innerHTML = '<tr><td colspan="' + cols + '" style="text-align:center; color:#888;">No matching stations found</td></tr>';
-    return;
-  }
-
-  for (let j = 0; j < filtered.length; j++) {
-    const s = filtered[j];
-    const tr = document.createElement("tr");
-    tr.id = "row-" + s.station_id;
-
-    let actionTd = "";
-    if (mode === "update") {
-      actionTd = '<td><button type="button" class="btn btn-warning btn-sm" onclick="selectStationForUpdate(' + s.station_id + ')">✏️ Update</button></td>';
-    } else if (mode === "delete") {
-      actionTd = '<td><button type="button" class="btn btn-danger btn-sm" onclick="selectStationForDelete(' + s.station_id + ", '" + escapeHTML(s.station_name) + "')\">🗑️ Delete</button></td>";
+    const countEl = document.getElementById("record-count");
+    if (countEl) {
+      countEl.textContent = "Showing " + records.length + " of " + allStations.length + " stations";
     }
 
-    tr.innerHTML =
-      "<td><strong>" + escapeHTML(s.station_id) + "</strong></td>" +
-      "<td>" + escapeHTML(s.station_name) + "</td>" +
-      "<td>" + escapeHTML(s.line_name) + "</td>" +
-      actionTd;
+    const tbody = document.getElementById("station-" + mode + "-tbody");
+    if (!tbody) return;
+    tbody.innerHTML = "";
 
-    tbody.appendChild(tr);
+    if (records.length === 0) {
+      const cols = mode === "show" ? 3 : 4;
+      tbody.innerHTML = '<tr><td colspan="' + cols + '" style="text-align:center; color:#888;">No matching stations found</td></tr>';
+      return;
+    }
+
+    for (let j = 0; j < records.length; j++) {
+      const s = records[j];
+      const tr = document.createElement("tr");
+      tr.id = "row-" + s.station_id;
+
+      let actionTd = "";
+      if (mode === "update") {
+        actionTd = `<td><button type="button" class="btn btn-warning btn-sm" onclick="selectStationForUpdate(${s.station_id})">✏️ Update</button></td>`;
+      } else if (mode === "delete") {
+        actionTd = `<td><button type="button" class="btn btn-danger btn-sm" onclick="selectStationForDelete(${s.station_id}, '${escapeHTML(s.station_name)}')">🗑️ Delete</button></td>`;
+      }
+
+      tr.innerHTML =
+        "<td><strong>" + escapeHTML(s.station_id) + "</strong></td>" +
+        "<td>" + escapeHTML(s.station_name) + "</td>" +
+        "<td>" + escapeHTML(s.line_name) + "</td>" +
+        actionTd;
+
+      tbody.appendChild(tr);
+    }
+  } catch (err) {
+    showMessage(err.message, true);
   }
 }
 
@@ -259,12 +229,21 @@ async function handleAddStation(e) {
 }
 
 // ----------------- UPDATE STATION -----------------
-window.selectStationForUpdate = function (id) {
+window.selectStationForUpdate = async function (id) {
   let s = null;
   for (let i = 0; i < allStations.length; i++) {
     if (allStations[i].station_id == id) {
       s = allStations[i];
       break;
+    }
+  }
+
+  if (!s) {
+    try {
+      const res = await request("/stations/" + id);
+      s = res.data;
+    } catch (err) {
+      return showMessage("Station details not found", true);
     }
   }
   if (!s) return;
@@ -316,7 +295,7 @@ async function handleUpdateStation(e) {
     const r = await getStations();
     allStations = r.data ? r.data : [];
     fillDatalists();
-    renderStationsTable("update");
+    await renderStationsTable("update");
   } catch (err) {
     showMessage(err.message, true);
   }
@@ -336,7 +315,7 @@ window.selectStationForDelete = async function (id, name) {
     const r = await getStations();
     allStations = r.data ? r.data : [];
     fillDatalists();
-    renderStationsTable("delete");
+    await renderStationsTable("delete");
   } catch (err) {
     showMessage(err.message, true);
   }
